@@ -21,6 +21,7 @@ query = 'search_query=%s&start=%i&max_results=%i' % (search_query,
 # Some entry metadata lives in the arXiv namespace.
 # This is a hack to expose both of these namespaces in
 # feedparser v4.1
+# Python 3.8.7 Windows: need to comment out the following two lines
 #feedparser._FeedParserMixin.namespaces['http://a9.com/-/spec/opensearch/1.1/'] = 'opensearch'
 #feedparser._FeedParserMixin.namespaces['http://arxiv.org/schemas/atom'] = 'arxiv'
 
@@ -44,16 +45,19 @@ abstract_list = []
 # Run through each entry, and print out information
 for entry in feed.entries:
     #print(entry.keys())
+    pc = entry.arxiv_primary_category['term']
+    tags = [entry.tags[i].term for i in range(len(entry.tags))]
     data_row = [
         entry.id,
-        entry.arxiv_primary_category,
-        entry.tags,
+        entry.published_parsed,
+        entry.published,
         entry.title,
+        pc,
+        tags,
         entry.summary]
     abstract_list.append(data_row)
 
-print(abstract_list)
-fields = ['id', 'arxiv_primary_category', 'tags', 'title', 'summary']
+fields = ['id', 'published_parsed', 'published', 'title', 'arxiv_primary_category', 'tags', 'summary']
 with open('raw_arxiv_%d.csv' % max_results, mode='w') as csv_file:
     write = csv.writer(csv_file)  
     write.writerow(fields)
