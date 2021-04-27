@@ -59,6 +59,6 @@ for entry in feed.entries:
 
 fields = ['id', 'published_parsed', 'published', 'title', 'arxiv_primary_category', 'tags', 'summary']
 with open('raw_arxiv_%d.csv' % max_results, mode='w') as csv_file:
-    write = csv.writer(csv_file)  
+    write = csv.writer(csv_file, lineterminator='\n')
     write.writerow(fields)
     write.writerows(abstract_list)
