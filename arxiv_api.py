@@ -1,5 +1,6 @@
 import urllib.request
 import feedparser
+import csv
 
 # Base api query url
 base_url = 'http://export.arxiv.org/api/query?';
@@ -7,7 +8,7 @@ base_url = 'http://export.arxiv.org/api/query?';
 # Search parameters
 search_query = 'all:electron' # search for electron in all fields
 start = 0                     # retreive the first 5 results
-max_results = 5
+max_results = 10
 
 query = 'search_query=%s&start=%i&max_results=%i' % (search_query,
                                                      start,
@@ -38,10 +39,19 @@ feed = feedparser.parse(response)
 
 abstract_list = []
 
+
+
 # Run through each entry, and print out information
 for entry in feed.entries:
 
-    abstract_list.append(entry.summary)
+    abstract = entry.summary
+    title = entry.title
+
+    with open("abstracts.csv", "a") as csvfile:
+    	writer = csv.writer(csvfile, delimiter='\t')
+    	writer.writerow([entry.title, entry.summary])
+
 
 
 print(abstract_list)
+
