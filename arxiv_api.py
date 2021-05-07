@@ -1,8 +1,9 @@
 import urllib.request
 import feedparser
 
-import csv
+import csv, os
 
+data_dir = 'datasets'
 
 # Base api query url
 base_url = 'http://export.arxiv.org/api/query?';
@@ -16,7 +17,7 @@ query = 'search_query=%s&start=%i&max_results=%i' % (search_query,
                                                      start,
                                                      max_results)
 
-# Opensearch metadata such as totalResults, startIndex, 
+# Opensearch metadata such as totalResults, startIndex,
 # and itemsPerPage live in the opensearch namespase.
 # Some entry metadata lives in the arXiv namespace.
 # This is a hack to expose both of these namespaces in
@@ -58,7 +59,7 @@ for entry in feed.entries:
     abstract_list.append(data_row)
 
 fields = ['id', 'published_parsed', 'published', 'title', 'arxiv_primary_category', 'tags', 'summary']
-with open('raw_arxiv_%d.csv' % max_results, mode='w') as csv_file:
+with open(data_dir + os.sep + 'raw_arxiv_%d.csv' % max_results, mode='w') as csv_file:
     write = csv.writer(csv_file, lineterminator='\n')
     write.writerow(fields)
     write.writerows(abstract_list)
