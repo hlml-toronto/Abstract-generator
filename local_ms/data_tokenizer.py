@@ -108,7 +108,7 @@ def train_wordpiece_bert():
     files = [DIR_DATA + os.sep + 'wikitext-103-raw' + os.sep + 'wiki.%s.raw' % a
              for a in ["test", "train", "valid"]]
     bert_tokenizer.train(files, trainer)
-    bert_tokenizer.save(DIR_TOKENIZERS + os.sep + 'bert-BPE_wiki.json')
+    bert_tokenizer.save(DIR_TOKENIZERS + os.sep + 'bert_wiki.json')
 
     output = bert_tokenizer.encode("Hello, y'all! How are you 😁 ?")
     print(output.ids)
