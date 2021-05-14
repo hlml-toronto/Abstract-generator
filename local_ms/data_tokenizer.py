@@ -1,12 +1,11 @@
 import os
-from tokenizers import Tokenizer
+from tokenizers import Tokenizer, decoders
 from tokenizers.models import BPE
 from tokenizers.trainers import BpeTrainer
-from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.pre_tokenizers import Whitespace, ByteLevel
 
 from data_sanitize import clean_list_of_abstracts
 from settings import DIR_DATA, DIR_TOKENIZERS
-
 
 """
 Note: huggingface has two relevant classes: Tokenizer and Transformer
@@ -55,8 +54,9 @@ def train_BPE(use_arxiv=False, outpath=None):
     # specify algo specific trianer
     trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
 
-    # think this is auto preprocessing before training TODO read
-    tokenizer.pre_tokenizer = Whitespace()  # they call this normalization also?
+    # pre-processing before training; will also affect the decoding step
+    # see: https://huggingface.co/docs/tokenizers/python/latest/components.html#decoders
+    tokenizer.pre_tokenizer = ByteLevel()
 
     # specify dataset and train
     if use_arxiv:
@@ -70,6 +70,8 @@ def train_BPE(use_arxiv=False, outpath=None):
                  for a in ["test", "train", "valid"]]
         tokenizer.train(files, trainer=trainer)
 
+    tokenizer.decoder = decoders.ByteLevel()
+
     if outpath is not None:
         tokenizer.save(outpath)
 
@@ -80,7 +82,6 @@ def train_wordpiece_bert():
     """
     Sample code from: https://huggingface.co/docs/tokenizers/python/latest/pipeline.html
     """
-    from tokenizers import Tokenizer
     from tokenizers.models import WordPiece
     bert_tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
 
@@ -101,6 +102,8 @@ def train_wordpiece_bert():
         ],
     )
 
+    bert_tokenizer.decoder = decoders.WordPiece()
+
     from tokenizers.trainers import WordPieceTrainer
     trainer = WordPieceTrainer(
         vocab_size=30522, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
@@ -110,21 +113,7 @@ def train_wordpiece_bert():
     bert_tokenizer.train(files, trainer)
     bert_tokenizer.save(DIR_TOKENIZERS + os.sep + 'bert_wiki.json')
 
-    output = bert_tokenizer.encode("Hello, y'all! How are you 😁 ?")
-    print(output.ids)
-    bert_tokenizer.decode([1, 27253, 16, 93, 11, 5097, 5, 7961, 5112, 6218, 0, 35, 2])
-    output = bert_tokenizer.encode("Welcome to the 🤗 Tokenizers library.")
-    print(output.tokens)
-    print(bert_tokenizer.decode(output.ids))
-
-    # huggingface: ""But by changing it to a proper decoder, we get...:""
-    swap_decoder = True
-    if swap_decoder:
-        from tokenizers import decoders
-        bert_tokenizer.decoder = decoders.WordPiece()
-        print(bert_tokenizer.decode(output.ids))
-
-    return train_wordpiece_bert
+    return bert_tokenizer
 
 
 def tokenizer_examples(tokenizer, raw_tokenizer=True, title='default'):
@@ -152,11 +141,6 @@ def tokenizer_examples(tokenizer, raw_tokenizer=True, title='default'):
             output = tokenizer.encode(text)
             print('%s output type & output.tokens: %s, %s' % (pre, type(output), output.tokens))
             print('%s decode(output.ids): %s' % (pre, tokenizer.decode(output.ids)))
-
-            # "use proper decoder" https://huggingface.co/docs/tokenizers/python/latest/pipeline.html
-            from tokenizers import decoders
-            tokenizer.decoder = decoders.WordPiece()
-            print('%s WordPiece decoder on output.ids: %s' % (pre, tokenizer.decode(output.ids)))
             print()
     else:
         print('Tokenizer examples (raw_tokenizer=False): %s%s' % (title, title_break))
@@ -202,6 +186,8 @@ if __name__ == '__main__':
     tokenizer_examples(bert_tokenizer, raw_tokenizer=True, title='pretrained_BERT_wordpiece')
 
     # train own bert see: https://huggingface.co/docs/tokenizers/python/latest/pipeline.html
-    # question: why is our output slightly different?
-    bert_tokenizer_trained = train_wordpiece_bert()
+    if flag_retrain:
+        bert_tokenizer_trained = train_wordpiece_bert()
+    else:
+        bert_tokenizer_trained = Tokenizer.from_file(DIR_TOKENIZERS + os.sep + 'bert_wiki.json')
     tokenizer_examples(bert_tokenizer_trained, raw_tokenizer=True, title='BERT_wordpiece')

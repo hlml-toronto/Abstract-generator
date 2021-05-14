@@ -42,7 +42,7 @@ def clean_list_of_abstracts(to_remove=('\n')):
 
 if __name__ == '__main__':
     list_of_abstracts = clean_list_of_abstracts()
-    abstract_idx = 0
-    print('Example of abstract entry %d:' % abstract_idx)
-    print(list_of_abstracts[abstract_idx])
-    print(list_of_abstracts[abstract_idx].split(' '))
+    for abstract_idx in range(len(list_of_abstracts)):
+        print('Example of abstract entry %d:' % abstract_idx)
+        print(list_of_abstracts[abstract_idx])
+        print(list_of_abstracts[abstract_idx].split(' '))
