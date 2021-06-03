@@ -184,3 +184,33 @@ def evaluate(eval_model, data_source, device, ntokens, criterion):
             output_flat = output.view(-1, ntokens)
             total_loss += len(data) * criterion(output_flat, targets).item()
     return total_loss / (len(data_source) - 1)
+
+
+def save_model(model, fpath, as_pickle=True):
+    if as_pickle:
+        # approach 1: save model (class) entirely (uses pickle)
+        torch.save(model, fpath)
+    else:
+        # approach 2: save model weights
+        torch.save(model.state_dict(), fpath)
+
+
+def load_model(model_path, device, as_pickle=True, vocab=None):
+    """
+    If not using as_pickle:
+        TODO this is risky way to load -- what if they were trained differently? refactor
+        Need to supply vocab class (for ntokens argument in model instantiation)
+    """
+    if as_pickle:
+        model = torch.load(model_path, map_location=device)
+    else:
+        ntokens = len(vocab.stoi)  # the size of vocabulary
+        emsize = 200  # embedding dimension
+        nhid = 200  # the dimension of the feedforward network model in nn.TransformerEncoder
+        nlayers = 2  # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
+        nhead = 2  # the number of heads in the multiheadattention models
+        dropout = 0.2  # the dropout value
+        # instantiate + fill in weights
+        model = TransformerModel(ntokens, emsize, nhead, nhid, nlayers, dropout)
+    model.eval()
+    return model

@@ -1,12 +1,14 @@
 import math
+import os
 import time
 
 import torch.nn as nn
 import torch
 from torchtext.datasets import WikiText2
 
-from model import TransformerModel, train, evaluate
+from model import TransformerModel, train, evaluate, save_model
 from model_utils import data_process, batchify, gen_tokenizer_and_vocab
+from settings import DIR_MODELS
 
 if __name__ == '__main__':
 
@@ -58,8 +60,15 @@ if __name__ == '__main__':
 
         scheduler.step()
 
-        test_loss = evaluate(best_model, test_data, device, ntokens, criterion)
-        print('=' * 89)
-        print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
-            test_loss, math.exp(test_loss)))
-        print('=' * 89)
+    # report best model on test set
+    test_loss = evaluate(best_model, test_data, device, ntokens, criterion)
+    print('=' * 89)
+    print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
+        test_loss, math.exp(test_loss)))
+    print('=' * 89)
+
+    # save best model (two methods)
+    # approach 1: save model (class) entirely (uses pickle)
+    save_model(model, DIR_MODELS + os.sep + 'model_epoch%d.pth' % epochs, as_pickle=True)
+    # approach 2: save model weights
+    save_model(model, DIR_MODELS + os.sep + 'model_weights_epoch%d.pth' % epochs, as_pickle=False)
