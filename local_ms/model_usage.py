@@ -16,7 +16,7 @@ def tokenize_some_text(text='The dog ran across the'):
     """
     tokenized_text = tokenizer(text)
     tokenized_text_ints = torch.tensor([vocab[token] for token in tokenized_text], dtype=torch.long)
-    return tokenized_text_ints
+    return tokenized_text, tokenized_text_ints
 
 
 def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', tokens_to_gen=10):
@@ -30,46 +30,73 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
         # Two cases:
         # - if less than BPTT (context length), need to add dummy tokens
         # - if longer than BPTT (context length), truncate to BPTT
-        raw_tokenized_text = tokenize_some_text(text=text_prompt)
-        nn = raw_tokenized_text.shape[0]
+        text_split, tokenized_text = tokenize_some_text(text=text_prompt)
+        nn = tokenized_text.shape[0]
 
-        print(raw_tokenized_text)
+        print(tokenized_text)
         print(nn)
 
-        if nn > BPTT:
-            input_slice = raw_tokenized_text[nn-BPTT:]
-            init_mask = model.generate_square_subsequent_mask(BPTT).to(device)
+        if nn > BPTT:  # take last BPTT elements
+            input_slice = tokenized_text[nn-BPTT:]
+            src_mask = model.generate_square_subsequent_mask(BPTT).to(device)
         else:
-            input_slice = raw_tokenized_text[0:nn]
-            init_mask = model.generate_square_subsequent_mask(BPTT).to(device)
+            input_slice = tokenized_text[0:nn]
+            src_mask = model.generate_square_subsequent_mask(nn).to(device)
 
-        processed_tokenized_text = torch.zeros(BPTT, dtype=torch.long) + dummy_token
-        processed_tokenized_text[0:nn] = input_slice
-        processed_tokenized_text.to(device)
+        #processed_tokenized_text = torch.zeros(BPTT, dtype=torch.long) + dummy_token
+        #processed_tokenized_text[0:nn] = input_slice
+        src = torch.zeros((nn,1), dtype=torch.long)
+        src[0:nn, 0] = tokenized_text
+        src.to(device)
 
-        return processed_tokenized_text, init_mask
+        return text_split, src, src_mask
 
     # 1) tokenize the text prompt and prepare associated src_mask for model.forward()
-    processed_tokenized_text, initial_mask = process_prompt()
-    print(processed_tokenized_text)
-    print(initial_mask)
+    prompt_split, src, src_mask = process_prompt()  # src should be in form ntokens x nbatches
+    nn = src_mask.shape[0]
+    src.reshape((nn, 1))
+    print(src)
+    print(src_mask)
 
     # 2)
     model.eval()
     for idx in range(tokens_to_gen):
-        out = model.forward(processed_tokenized_text, initial_mask)
+        out = model.forward(src, src_mask)
         print(out.shape)
-        best_guess = torch.argmax(out)
-        print(len(vocab.itos), best_guess)
-        best_string = vocab.itos[best_guess]
-        print(best_guess, best_string)
+
+        """
+        for idx in range(5):
+            print('Input %d:' % idx, prompt_split[0:idx+1])
+            qq = torch.argmax(out[idx,0,:])
+            print('Guess %d:' % idx, vocab.itos[qq])
+            print(qq)
+            print(vocab.itos[qq])
+        """
+
+        best_guess_int = torch.argmax(out[nn-1, 0])  # care batch dimension, nn vs BPTT
+        best_guess_string = vocab.itos[best_guess_int]
+        print('best_guess_int, best_guess_string:', best_guess_int, best_guess_string)
 
         # update total_text_string by adding best guess
-        total_text_string += ' %s' % best_string
+        total_text_string += ' %s' % best_guess_string
 
-        # update 35 long running window
+        # update src and src mask for next pass of model.forward()
+        if nn < BPTT:
+            # extend and shift the running window of input data
+            src_updated = torch.zeros((nn + 1,1), dtype=torch.long)  # extend src to nn
+            src_updated[0:nn, 0] = src[:, 0]
+            src_updated[nn, 0] = best_guess_int
+            src = src_updated.to(device)
+            # increment mask dimension
+            src_mask = model.generate_square_subsequent_mask(nn + 1).to(device)
+            nn += 1
+        else:
+            src_orig = src.clone()
+            src[0:BPTT-1, 0] = src_orig[1:, 0]
+            src[-1, 0] = best_guess_int
 
     return total_text_string
+
 
 if __name__ == '__main__':
     # device settings
@@ -94,10 +121,9 @@ if __name__ == '__main__':
     print('model_A == model_B:', model_A == model_B)
 
     # Text generation example
-    prompt = 'The dog ran across the'
-    ngen = 10
-    generated_text = gen_some_text(model_A, vocab, device, text_prompt=prompt, tokens_to_gen=ngen)
-    print("Text prompt:", prompt)
+    prompt = 'Text generation is easier than you think , however'
+    ngen = 30
+    generated_text = gen_some_text(model_B, vocab, device, text_prompt=prompt, tokens_to_gen=ngen)
+    print("Text prompt:\n", prompt)
     print("Number of tokens to generate:", ngen)
-    print("Generated_text:")
-    print(generated_text)
+    print("Generated_text:\n", generated_text)
