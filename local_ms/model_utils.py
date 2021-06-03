@@ -7,6 +7,16 @@ from torchtext.vocab import Vocab
 from settings import BPTT
 
 
+def gen_tokenizer_and_vocab():
+    train_iter = WikiText2(split='train')
+    tokenizer = get_tokenizer('basic_english')
+    counter = Counter()
+    for line in train_iter:
+        counter.update(tokenizer(line))
+    vocab = Vocab(counter)
+    return tokenizer, vocab
+
+
 def data_process(raw_text_iter, vocab, tokenizer):
     data = [torch.tensor([vocab[token] for token in tokenizer(item)],
                          dtype=torch.long) for item in raw_text_iter]
@@ -28,13 +38,3 @@ def get_batch(source, i):
     data = source[i:i + seq_len]
     target = source[i + 1:i + 1 + seq_len].reshape(-1)
     return data, target
-
-
-def gen_tokenizer_and_vocab():
-    train_iter = WikiText2(split='train')
-    tokenizer = get_tokenizer('basic_english')
-    counter = Counter()
-    for line in train_iter:
-        counter.update(tokenizer(line))
-    vocab = Vocab(counter)
-    return tokenizer, vocab

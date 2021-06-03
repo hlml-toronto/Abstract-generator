@@ -68,7 +68,7 @@ Code notes:
         optimizer = torch.optim.SGD(model.parameters(), lr=lr)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 
-2) Model takes in: data, src_mask
+2) model.forward() takes in: data, src_mask
     - src_mask "blocks out next word" (bptt x bptt square matrix of elements either 0 or -inf)
         [0 -inf ... -inf]      [The ??? ... ???]
         [0   0  ... -inf]      [The dog ... ???]
@@ -212,5 +212,6 @@ def load_model(model_path, device, as_pickle=True, vocab=None):
         dropout = 0.2  # the dropout value
         # instantiate + fill in weights
         model = TransformerModel(ntokens, emsize, nhead, nhid, nlayers, dropout)
+        model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     return model
