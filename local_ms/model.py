@@ -81,18 +81,30 @@ Code notes:
 
 3) Loss function ("criterion"): nn.CrossEntropyLoss
     - input A is target class (i.e. the integer of the target word)
-    - input B is the model output, vector of class  probabilities
+    - input B is the model output, vector of class probabilities
 """
 
 
 class TransformerModel(nn.Module):
+    """
+    Notes on semantics:
+    - This appears to be defined as an "Encoder only" transformer
+    - It is however defined very similar to GPT models, where they instead say: "stack of decoders"
+      https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf
+        - They call their network a stack of decoders (seemingly because they use subsequent masks)
+        - From Attention is All You Need (2017):
+            - Encoder = self-attention with no "subsequent text masking"
+            - Decoder =      attention with    "subsequent text masking" + input from encoder side
+    - The "TransformerEncoder" class supports masking and that's how it's used here
+    - The "TransformerDecoder" class is more complex, supports additional inputs (e.g. from Encoder)
+    """
 
     def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
         super(TransformerModel, self).__init__()
         self.model_type = 'Transformer'
         self.pos_encoder = PositionalEncoding(ninp, dropout)
         encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
-        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
+        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)  # used with subsequent mask its more of a decoder?
         self.encoder = nn.Embedding(ntoken, ninp)
         self.ninp = ninp
         self.decoder = nn.Linear(ninp, ntoken)
