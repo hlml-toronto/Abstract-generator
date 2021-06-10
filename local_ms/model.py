@@ -12,7 +12,7 @@ from settings import BPTT
 See URL: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
 
 Code notes:
-1) PyTorch has data loader classes WiokiText2 or WikiText103 (50x bigger) and a Vocab class 
+1) PyTorch has data loader classes WikiText2 or WikiText103 (50x bigger) and a Vocab class 
     - Vocab class builds a word level dictionary, with each word having specific index int
     - Data notes: 
         - RAW: WikiText2 training data is a list of ~30,000 "lines" or "paragraphs" (600 articles)
@@ -68,7 +68,7 @@ Code notes:
         optimizer = torch.optim.SGD(model.parameters(), lr=lr)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 
-2) model.forward() takes in: data, src_mask
+3) model.forward() takes in: data, src_mask
     - src_mask "blocks out next word" (bptt x bptt square matrix of elements either 0 or -inf)
         [0 -inf ... -inf]      [The ??? ... ???]
         [0   0  ... -inf]      [The dog ... ???]
@@ -79,7 +79,7 @@ Code notes:
     - The output represents the unnormalized probability of the next word given the input,
       for each element of the input tensor (properly masked using src_mask)
 
-3) Loss function ("criterion"): nn.CrossEntropyLoss
+4) Loss function ("criterion"): nn.CrossEntropyLoss
     - input A is target class (i.e. the integer of the target word)
     - input B is the model output, vector of class probabilities
 """
