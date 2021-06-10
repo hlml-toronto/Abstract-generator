@@ -68,6 +68,20 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
 
         running_context_string = ' '.join([vocab.itos[src[k]] for k in range(src.shape[0])])
 
+        # TESTING DIFFERENT src_mask (all zero)
+        use_diff_mask = False
+        if use_diff_mask:
+            print('Warning: testing maskless generation')
+            # A:
+            #src_mask = torch.zeros(nn, nn)
+            # B:
+            src_mask = torch.zeros(nn, nn) + float('-inf')
+            src_mask[:, 0] = 0
+            src_mask[-1, :] = 0
+            # C:
+            #src_mask = torch.rand(nn, nn)
+            #print(src_mask)
+
         out = model.forward(src, src_mask)
         print(out.shape)
 
@@ -149,11 +163,10 @@ if __name__ == '__main__':
     print('model_A == model_B:', model_A == model_B)
 
     # Text generation example
-    #prompt = 'Text generation is easier than you think , however'
-    prompt = ' Text generation is easier than you think , however , but i can be a lot of the game . . . . . . . . . . . . . . . . the guitar hero , the game was released in the game was released in the game was released in the game , and the game , and the game , and the game . the game was released in the game was released in the game , and the game , and the game was released in the game . the game was released in the game , and the game , and the'
-    ngen = 100
+    prompt = 'Text generation is easier than you think , however'
+    ngen = 10
     generated_text = gen_some_text(
-        model_A, vocab, device, text_prompt=prompt, tokens_to_gen=ngen, vis=True)
+        model_A, vocab, device, text_prompt=prompt, tokens_to_gen=ngen, vis=False)
     print("Text prompt:\n", prompt)
     print("Number of tokens to generate:", ngen)
     print("Generated_text:\n", generated_text)
