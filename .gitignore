@@ -2,3 +2,5 @@
 __pycache__/
 local_ms/data/wikitext-103-raw/
 bumbleBERT/data/
+local_ms/models/
+local_ms/.data/
