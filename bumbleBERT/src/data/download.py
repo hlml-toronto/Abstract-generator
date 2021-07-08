@@ -4,7 +4,6 @@ import csv, os
 from src.default import RAW_DATA_DIR
 
 def arxiv_api(raw_data_dir, start=0, max_results=11, search_query='all:electron'):
-    data_dir = 'datasets'
 
     # Base api query url
     base_url = 'http://export.arxiv.org/api/query?';
