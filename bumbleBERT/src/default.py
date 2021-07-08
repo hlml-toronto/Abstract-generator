@@ -7,6 +7,7 @@ DATA_DIR = ROOT_DIR + os.sep + 'data'
 RAW_DATA_DIR = DATA_DIR + os.sep + 'raw'
 PROC_DATA_DIR = DATA_DIR + os.sep + 'processed'
 TOK_DIR = DATA_DIR + os.sep + 'tokenizers'
+MODEL_DIR = DATA_DIR + os.sep + 'models'
 
 special_token_lst = {'bos_token' : "<s>"
                     , 'eos_token' : "<\s>"
