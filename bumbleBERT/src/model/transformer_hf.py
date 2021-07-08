@@ -1,9 +1,66 @@
 import math
+import numpy as np
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
+
+def pad_tensor(vec, padSize, dim, pad):
+    """
+    Input:
+        vec : tensor to pad
+        padSize : the size to pad to
+        dim : dimension to pad
+        pad : value of pad
+
+    Output:
+        a new tensor padded to 'pad' in dimension 'dim'
+    """
+    pad_size = list(vec.shape)
+    pad_size[dim] = padSize - vec.size(dim)
+    return torch.cat([vec, pad * torch.ones(*pad_size)], dim=dim)
+
+
+class PadCollate:
+    """
+    a variant of collate_fn that pads according to the longest sequence in
+    a batch of sequences or maxLen
+    """
+
+    def __init__(self, dim=0, maxLen=100, padValue=0):
+        """
+        Input:
+            dim : the dimension to be padded (dimension of time in sequences)
+        """
+        self.dim = dim
+        self.maxLen = maxLen
+        self.padValue = padValue
+
+    def pad_collate(self, batch):
+        """
+        Input:
+            batch : list of (tensor, label)
+
+        Output:
+            xs : a tensor of all examples in 'batch' after padding
+            ys : a LongTensor of all labels in batch
+        """
+        # find longest sequence
+        max_len_seq = np.max( [ x.shape[self.dim] for x in batch ] )
+        max_len = np.min( [max_len_seq, self.maxLen] )
+
+        # pad according to max_len
+        batch = [pad_tensor(x[:max_len], padSize=max_len, pad=self.padValue
+                                , dim=self.dim) for x in batch ]
+        # stack all
+        data = torch.stack([x[:-1] for x in batch], dim=1) # change to dim = 0 for annotated transformer?
+        target = torch.stack([x[1:] for x in batch], dim=1)
+        #ys = torch.LongTensor(map(lambda x: x[1], batch))
+        return [data.long(), target.long()]
+
+    def __call__(self, batch):
+        return self.pad_collate(batch)
 
 class TransformerModel(nn.Module):
 
@@ -30,7 +87,7 @@ class TransformerModel(nn.Module):
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-initrange, initrange)
 
-    def forward(self, src, src_mask):
+    def forward(self, src, src_mask): # should I add a padding mask here?
         src = self.encoder(src) * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, src_mask)

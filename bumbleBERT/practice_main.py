@@ -123,14 +123,14 @@ print(src_mask)
 for batch, i in enumerate(range(0, train_data.size(0) - 1, bptt)):
     if batch==0:
         data, targets = get_batch(train_data, i)
-        print(data)
+        #print(data)
         optimizer.zero_grad()
         if data.size(0) != bptt:
             src_mask = model.generate_square_subsequent_mask(data.size(0)).to(device)
-        print(data.size())
-        print(src_mask)
+        #print(data.size())
+        #print(src_mask)
 
-"""
+
 def train():
     model.train() # Turn on the train mode
     total_loss = 0.
@@ -141,6 +141,10 @@ def train():
         optimizer.zero_grad()
         if data.size(0) != bptt:
             src_mask = model.generate_square_subsequent_mask(data.size(0)).to(device)
+        #print(data.size(0),src_mask.size(0), data.size(1), data, src_mask)
+        #print("Size :", data.size(0), data.size(1)," Mask : ", src_mask.size(0), src_mask.size(1))
+        # data batched : (35,20), mask size : (35,35)
+
         output = model(data, src_mask)
         loss = criterion(output.view(-1, ntokens), targets)
         loss.backward()
@@ -149,6 +153,7 @@ def train():
 
         total_loss += loss.item()
         log_interval = 200
+        print(batch)
         if batch % log_interval == 0 and batch > 0:
             cur_loss = total_loss / log_interval
             elapsed = time.time() - start_time
@@ -160,6 +165,7 @@ def train():
                     cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
+
 
 def evaluate(eval_model, data_source):
     eval_model.eval() # Turn on the evaluation mode
@@ -194,4 +200,3 @@ for epoch in range(1, epochs + 1):
         best_model = model
 
     scheduler.step()
-"""

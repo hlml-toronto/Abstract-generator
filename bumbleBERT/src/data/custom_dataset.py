@@ -5,7 +5,10 @@ class ArxivDataset(Dataset):
     """
     NOTE: Preprocessing can happen in here!
 
-    Describe what this Dataset does
+    This Dataset takes the Arxiv data downloaded into a '.csv' files and, when
+    called, returns a summary from the list of summaries. You can choose to set
+    a transform (generally a tokenizer) to transform what is returned into
+    another form of data more suitable (generally a token).
     """
     def __init__(self, csvfile, maxLength=None, transform=None):
         self.data = pd.read_csv(csvfile)
@@ -39,14 +42,13 @@ class ArxivDataset(Dataset):
         instance = self.get_instance_pretransform(idx)
         # tokenize on-the-fly
         instance = self.transform( instance
-                                    , max_length=self.maxLen+1
-                                    , padding='max_length'
-                                    , truncation=True
+                                    #, max_length=self.maxLen+1
+                                    #, padding='max_length'
+                                    #, truncation=True
                                     , return_tensors='pt'
                                     )
-        # source and target are slightly shifted
-        return { 'src' : instance['input_ids'][0][:-1]
-                        , 'trg' : instance['input_ids'][0][1:] }
+
+        return instance['input_ids'][0]
 
     """
     @staticmethod
