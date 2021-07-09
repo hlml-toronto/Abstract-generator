@@ -55,6 +55,9 @@ def arxiv_api(raw_data_dir, start=0, max_results=11, search_query='all:electron'
 
     fields = ['id', 'published_parsed', 'published', 'title', 'arxiv_primary_category', 'tags', 'summary']
     filename = 'arxiv_%d.csv' % max_results
+    if not os.path.exists(raw_data_dir):
+        os.makedirs(raw_data_dir)
+        
     with open(raw_data_dir + os.sep + filename, mode='w') as csv_file:
         write = csv.writer(csv_file, lineterminator='\n')
         write.writerow(fields)
