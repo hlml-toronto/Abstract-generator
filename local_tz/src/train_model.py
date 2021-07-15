@@ -95,16 +95,6 @@ def run_epoch(data_iter, model, loss_compute):
 			tokens = 0
 	return total_loss / total_tokens
 
-global max_tgt_in_batch
-
-def batch_size_fn(new, count, sofar):
-	# "Keep augmenting batch and calculate total number of tokens + padding."
-	global max_tgt_in_batch
-	if count == 1:
-		max_tgt_in_batch = 0
-	max_tgt_in_batch = max(max_tgt_in_batch,  len(new.trg) + 2)
-	tgt_elements = count * max_tgt_in_batch
-	return tgt_elements
 
 class NoamOpt:
 	#"Optim wrapper that implements rate."
@@ -164,10 +154,24 @@ class LabelSmoothing(nn.Module):
 def data_gen(V, batch, nbatches):
 	# "Generate random data for a src-tgt copy task."
 	# generates nbatches of Batch objects
+
 	for i in range(nbatches):
-		data = torch.from_numpy(np.random.randint(1, V, size=(batch, 10)))
-		data[:, 0] = 1 
+
+		A = np.tile(np.arange(10), batch)
+		A = A.reshape(batch, 10)
+
+		rows, column_indices = np.ogrid[:A.shape[0], :A.shape[1]]
+
+		# Use always a negative shift, so that column_indices are valid.
+		# (could also use module operation)
+		r = np.random.randint(-9, 1, size=batch)
+		r[r < 0] += A.shape[1]
+		column_indices = column_indices - r[:, np.newaxis]
+
+		result = A[rows, column_indices]
+		data = torch.from_numpy(result)
 		tgt = data
+		# print(result)
 		yield Batch(tgt, 0)
 
 class SimpleLossCompute:
@@ -202,8 +206,6 @@ model = make_model(V, N=2)
 model_opt = NoamOpt(model.embed[0].d_model, 1, 400,
 		torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
 
-verbose = False
-
 for epoch in range(10):
 	model.train() ## calls nn.Module.train() which sets mode to train
 	run_epoch(data_gen(V, 30, 20), model, # generates 20 batches of [30, 10] random integers (first column is 1)
@@ -215,7 +217,7 @@ for epoch in range(10):
 def greedy_decode(model, max_len, start_symbol):
 	ys = torch.ones(1, 1).fill_(start_symbol).long()
 	for i in range(max_len-1):
-		print(ys)
+		# print(ys)
 		out = model.forward(ys, subsequent_mask(ys.size(1)))
 		prob = model.generator(out[:, -1])
 		_, next_word = torch.max(prob, dim = 1)
@@ -228,4 +230,7 @@ def greedy_decode(model, max_len, start_symbol):
 ## Let's see what trained output looks like 
 model.eval()
 verbose = True
+print(greedy_decode(model, max_len=10, start_symbol=0))
 print(greedy_decode(model, max_len=10, start_symbol=1))
+print(greedy_decode(model, max_len=10, start_symbol=4))
+print(greedy_decode(model, max_len=10, start_symbol=9))
