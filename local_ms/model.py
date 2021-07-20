@@ -57,14 +57,14 @@ Code notes:
       (e.g. bptt = 7 then each window has 7 words, and we want to predict the 8th word) 
     - batch size (training and evaluation, can be different)
     - model:
-        ntokens = len(vocab.stoi) # the size of vocabulary
-        emsize = 200 # embedding dimension
-        nhid = 200 # the dimension of the feedforward network model in nn.TransformerEncoder
-        nlayers = 2 # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
-        nhead = 2 # the number of heads in the multiheadattention models
-        dropout = 0.2 # the dropout value
+        ntokens = len(vocab.stoi)  # the size of vocabulary
+        emsize = 200               # embedding dimension
+        nhid = 200                 # the dimension of the feedforward network model in nn.TransformerEncoder
+        nlayers = 2                # the number of nn.TransformerEncoderLayer in nn.TransformerEncoder
+        nhead = 2                  # the number of heads in the multiheadattention models
+        dropout = 0.2              # the dropout value
     - optimization:
-        lr = 5.0 # learning rate
+        lr = 5.0                   # learning rate
         optimizer = torch.optim.SGD(model.parameters(), lr=lr)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
 

@@ -32,8 +32,8 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
     If vis: plot distribution over vocab for next word, given the past BPTT
     """
     # decoder hyperparameters
-    DECODE_SAMPLE_BETA = 1.2  # above 2 seems too high
-    DECODE_SAMPLE_SEED = 103
+    DECODE_SAMPLE_BETA = 0.9  #1.2  # above 2 seems too high
+    DECODE_SAMPLE_SEED = 104  # 103
     DECODE_SAMPLE_TOPP_THRESHOLD = 0.85
     np.random.seed(DECODE_SAMPLE_SEED)
 
@@ -104,6 +104,7 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
         else:
             assert style == 'sample_topp'
             # TODO implement gumbel max trick here too
+            print('TODO implement gumbel max trick for decode_style == sample_topp')
             next_word_weights = out[nn-1, 0].detach().numpy()
             next_word_weights_exp = np.exp(DECODE_SAMPLE_BETA * next_word_weights)
             next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
@@ -235,8 +236,8 @@ if __name__ == '__main__':
     print('model_A == model_B:', model_A == model_B)
 
     # Text generation example
-    #prompt = 'Text generation is easier than you think , however'
-    prompt = 'The dog ran across the'
+    prompt = 'Text generation is easier than you think , however'
+    #prompt = 'The dog ran across the'
     ngen = 60
     decode_style = 'sample_full'
     generated_text = gen_some_text(
@@ -249,3 +250,5 @@ if __name__ == '__main__':
     # TODO: alternative generation
     # currently 'greedy method'
     # see: https://huggingface.co/blog/how-to-generate
+
+    #  The dog ran across the series to cover , allowing it as a tenant of the game of a theory . according to the characters were painted by the set controllers , they used by ministers and also been provided by an artificial <unk> , also found involved , so , but it was unlocked , and drew at the same same year over the
