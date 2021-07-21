@@ -10,6 +10,11 @@ from model import TransformerModel, train, evaluate, save_model
 from model_utils import data_process, batchify, gen_tokenizer_and_vocab
 from settings import DIR_MODELS
 
+"""
+Note: the ipynb has modified version of code below; this should be functionalized and integrated
+"""
+
+
 if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
