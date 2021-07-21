@@ -1,6 +1,10 @@
 .idea/
 __pycache__/
-local_ms/data/wikitext-103-raw/
+*-checkpoint.ipynb
 bumbleBERT/data/
-local_ms/models/
+local_ms/data/wikitext-103-raw/
 local_ms/.data/
+local_ms/models/
+local_ms/notebooks/.data/
+local_ms/notebooks/output/
+local_ms/saved/
