@@ -2,7 +2,7 @@ import torch
 from torchtext.datasets import WikiText2
 from torchtext.data.utils import get_tokenizer
 from collections import Counter
-from torchtext.vocab import Vocab
+from torchtext.legacy.vocab import Vocab as RetiredVocab
 
 from settings import BPTT
 
@@ -13,7 +13,7 @@ def gen_tokenizer_and_vocab():
     counter = Counter()
     for line in train_iter:
         counter.update(tokenizer(line))
-    vocab = Vocab(counter)
+    vocab = RetiredVocab(counter)
     return tokenizer, vocab
 
 

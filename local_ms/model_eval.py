@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # load method A and B
     model_A = load_model(model_path_A, device, as_pickle=True, vocab=None)
     model_B = load_model(model_path_B, device, as_pickle=False, vocab=vocab)
-
+    
     # data loading
     train_data = data_process(train_iter, vocab, tokenizer)
     val_data = data_process(val_iter, vocab, tokenizer)
