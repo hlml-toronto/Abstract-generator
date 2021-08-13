@@ -1,6 +1,6 @@
 import time
 # training function - same as in hugging face
-def train( model, maxLen, dataLoader, optimizer_, scheduler_, criterion_, device_ ):
+def train( model, maxLen, dataLoader, device, optimizer_, scheduler_, criterion_ ):
     """
     Training loop that takes batches from dataLoader and pushes them to device
     to train. Will check if they're the same size of maxLen: if shorter, will
