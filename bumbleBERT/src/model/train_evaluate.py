@@ -21,7 +21,7 @@ def train( model, maxLen, dataLoader, device, optimizer_, scheduler_, criterion_
     model.train() # Turn on the train mode
     total_loss = 0.
     start_time = time.time()
-    src_mask = model.generate_square_subsequent_mask(maxLen).to(device_)
+    src_mask = model.generate_square_subsequent_mask(maxLen).to(device)
     for i, batch in enumerate(dataLoader):
         #print((batch.src).is_pinned())
         src = (batch.src).to(device); tgt = (batch.tgt).to(device)
