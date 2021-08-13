@@ -6,25 +6,40 @@ import torch
 
 class ArxivDataset(Dataset):
     """
-    NOTE: Preprocessing can happen in here!
-
     This Dataset takes the Arxiv data downloaded into a '.csv' files and, when
     called, returns a summary from the list of summaries. You can choose to set
     a transform (generally a tokenizer) to transform what is returned into
-    another form of data more suitable (generally a token).
+    another form of data more suitable (generally a tensor of tokens).
+
+    To change what a sample is, need only change the method :
+        get_instance_pretransform
     """
-    def __init__(self, csvfile, device, maxLength=None, transform=None):
+    def __init__(self, csvfile, device=None, maxLength=None, transform=None):
+        """
+        Loads all of the data and cleans it up slightly. Might wants to call it
+        something else instead of 'raw', but for now will do. Sets a transform
+        of the data (which is how data is presented if fetched).
+
+        Input
+            csvfile (str)               : csv file containing data
+            device (str, opt)                : Unused for now.
+            maxLength (int, opt)        : Unused for now.
+            transform (function, opt)   : a transform of the data if one already
+                                            exists
+        """
         self.data_raw = pd.read_csv(csvfile)
         # last one r'\s+|\\n' seems to be the only one that works
         remove_lst = ['\r\n','\n','\ n',r'\\n',r'\n',r'\s+|\\n']
         self.data_raw.replace(remove_lst,' ',regex=True, inplace=True)
         self.transform = transform  # HuggingFace tokenizer
         self.maxLen = maxLength
-        self.get_instance = self.get_instance_pretransform
+        self.get_instance = self.get_instance_pretransform # how to get a sample
+                                                        # from the dataset
         if self.transform is not None:
             self.get_instance = self.get_instance_transformed
 
     def __len__(self):
+        # gives number of samples in dataset
         return len(self.data_raw)
 
     def __getitem__(self, idx):
@@ -37,11 +52,19 @@ class ArxivDataset(Dataset):
         self.get_instance = self.get_instance_transformed
 
     def get_instance_pretransform(self, idx):
-        # returns simply the text of summary
+        # returns some form of the text which will be our sample
         return self.data_raw['summary'][idx]
 
     def get_instance_transformed(self, idx):
-        # once tranform is defined, can get item already transformed
+        """
+        Once tranform is defined, can get item already transformed
+
+        Input
+            idx (int) : index of sample to fetch and transform
+        Return
+            transformed sample
+        """
+
         instance = self.get_instance_pretransform(idx)
         # tokenize on-the-fly
         instance = self.transform( instance
@@ -54,6 +77,9 @@ class ArxivDataset(Dataset):
         return instance['input_ids'][0]
 
     """
+    # This is some code that was copied over from some class I based this on.
+    # I'm not entirely sure what it was used for, but could be interesting to
+    # figure out.
     @staticmethod
     def collate_fn(batches: List[Dict[str, int]]):
         return {
@@ -76,7 +102,9 @@ class WikiTextCustom(Dataset):
 
 class ArxivDatasetMemoryOnGPU(Dataset):
     """
-    NOTE: Preprocessing can happen in here!
+    NOTE: Copy of above class that I wanted to change to have samples on GPU,
+            however I think this won't work because of the dataloader (it should
+            probably happen at the level of batches)
 
     This Dataset takes the Arxiv data downloaded into a '.csv' files and, when
     called, returns a summary from the list of summaries. You can choose to set
