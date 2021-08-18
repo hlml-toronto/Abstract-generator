@@ -1,6 +1,6 @@
-import time
+import time, torch, math
 # training function - same as in hugging face
-def train( model, maxLen, dataLoader, device, optimizer_, scheduler_, criterion_ ):
+def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, scheduler_, criterion_ ):
     """
     Training loop that takes batches from dataLoader and pushes them to device
     to train. Will check if they're the same size of maxLen: if shorter, will
@@ -45,7 +45,7 @@ def train( model, maxLen, dataLoader, device, optimizer_, scheduler_, criterion_
                   'lr {:02.2f} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
                     epoch, i, len(dataLoader),
-                            scheduler.get_last_lr()[0],
+                            scheduler_.get_last_lr()[0],
                             elapsed * 1000 / log_interval,
                             cur_loss, math.exp(cur_loss)))
             total_loss = 0
@@ -53,7 +53,7 @@ def train( model, maxLen, dataLoader, device, optimizer_, scheduler_, criterion_
 
 
 # evaluation function outside of training - same as hugging face
-def evaluate(eval_model, maxLen, dataLoader, nbrSamples):
+def evaluate(eval_model, maxLen, dataLoader, nbrSamples, device, vocabSize, criterion_):
     """
     Takes a trained model, puts it in evaluation mode to see how well it
     performs on another set of data.
@@ -68,16 +68,17 @@ def evaluate(eval_model, maxLen, dataLoader, nbrSamples):
     """
     eval_model.eval() # Turn on the evaluation mode
     total_loss = 0.
-    src_mask = model.generate_square_subsequent_mask(maxLen).to(device)
+    src_mask = eval_model.generate_square_subsequent_mask(maxLen).to(device)
     with torch.no_grad():
         for batch in dataLoader:
             src = (batch.src).to(device); tgt = (batch.tgt).to(device)
             if src.size(0) != maxLen:
-                src_mask = model.generate_square_subsequent_mask(
+                src_mask = eval_model.generate_square_subsequent_mask(
                                                     src.size(0)).to(device)
             output = eval_model(src, src_mask)
             output_flat = output.view(-1, vocabSize)
             print("length of src :",len(src))
-            total_loss += len(src) * criterion(output_flat
+            print(len(src))
+            total_loss += len(src) * criterion_(output_flat
                                                 , tgt.reshape(-1)).item()
     return total_loss / (nbrSamples - 1) # nbrSamples -x-> len(dataLoader)
