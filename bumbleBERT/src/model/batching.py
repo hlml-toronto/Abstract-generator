@@ -9,15 +9,21 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 class CustomBatch():
     """
     a variant of collate_fn that pads according to the longest sequence in
-    a batch of sequences or maxLen
+    a batch of sequences or maxLen. Unclear to me whether this is instantiated
+    at every call to dataloader or if it's instantiated along with dataloader.
+    For now, all the tensors exist on CPU and are later pushed to the GPU. Needs
+    potentially to be changed.
     """
 
     def __init__(self, data, dim=0, maxLenModel=100, padValue=0):
         """
         Input:
-            dim : the dimension to be padded (dimension of time in sequences)
+            data (dataset)      : a batch of dataset.
+            dim (int)           : the dimension to be padded (dimension of time in sequences)
+            maxLenModel (int)   : maixmum length of sentence
+            padValue (int)      : the value for padding.
         """
-        self.dim = dim; self.maxLen = maxLenModel; self.padValue = padValue
+        self.dim = dim; self.padValue = padValue
 
         max_len_seq = np.max( [ x.shape[self.dim] for x in data ] )
         self.maxLen = np.min( [max_len_seq, maxLenModel] )
@@ -31,6 +37,8 @@ class CustomBatch():
 
     def pad_tensor(self, vec):
         """
+        padding a tensor which represents a batch
+
         Input:
             vec : tensor to pad
 
@@ -39,7 +47,7 @@ class CustomBatch():
         """
         padSize = list(vec.shape)
         padSize[self.dim] = self.maxLen - vec.size(self.dim)
-        return torch.cat([vec, self.maxLen*torch.ones(*padSize)], dim=self.dim)
+        return torch.cat([vec, self.padValue*torch.ones(*padSize)], dim=self.dim)
 
     def pin_memory(self):
         self.src = self.src.pin_memory()
