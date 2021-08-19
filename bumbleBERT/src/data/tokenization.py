@@ -40,14 +40,14 @@ def train_custom_tokenizer(token_model, dataset, token_filename, token_dir
             functions (might be easier using pandas before)
 
     Input
-        token_model              : algorithm to use for tokenization
-        datasets                 : a python iterator that goes through the data
+        token_model (str)        : algorithm to use for tokenization
+        dataset (class)          : a python iterator that goes through the data
                                     to be used for training
-        token_dir                : directory with tokenizers
-        vocab_size               : size of the vocabulary to use
-        token_filename           : filename of particular token we want to
+        token_dir (str)          : directory with tokenizers
+        vocab_size (int)         : size of the vocabulary to use
+        token_filename (str)     : filename of particular token we want to
                                     train. Will overwrite previously save files.
-        vocab                    : models other than BPE can use non-mandatory
+        vocab (list of str)      : models other than BPE can use non-mandatory
                                     vocab as input
         max_input_chars_per_word : used for WordPiece
 
@@ -138,8 +138,16 @@ def train_custom_tokenizer(token_model, dataset, token_filename, token_dir
 def load_tokenizer(tknzrFile, eos_token=None, bos_token=None
                             , pad_token=None, mask_token=None, unk_token=None):
     """
+    Interestingly, HuggingFace does not allow the base tokenizer to be called.
+    This is a bizarre choice, but accordingly we have to look for something else
+    , which is why I use the PreTrainedTokenizerFast to wrap the base tokenizer.
+    Written in Rust, it's faster than the base tokenizer class, but also lets
+    you call the tokenizer as tknzr('text to be tokenized').
+
     Input
-        tknzrFile : .json file of the tokenizer trained previously
+        tknzrFile (str) : .json file of the tokenizer trained previously
+        *_tokens (str)  : tokens that are to be used in the corresponding context
+                            Some of them are not implemented yet...
     Output
         tknzr     : tokenizer as PreTrainedTokenizerFast class to be passed on
     """
