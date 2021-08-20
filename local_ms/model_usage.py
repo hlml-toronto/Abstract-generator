@@ -23,19 +23,30 @@ def tokenize_some_text(text='The dog ran across the'):
     return tokenized_text, tokenized_text_ints
 
 
-def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', tokens_to_gen=10,
-                  vis=False, decode_style='greedy'):
+def gen_some_text(model, vocab, device,
+                  text_prompt='The dog ran across the',
+                  tokens_to_gen=10,
+                  vis=False,
+                  verbose=True,
+                  decode_style='greedy',
+                  decode_seed=0,
+                  decode_beta=1.0,
+                  decode_sample_topp_threshold=0.70):
     """
     dummy_token: if text_prompt is < BPTT tokens, need to add dummy tokens and mask them
     1) tokenize the text prompt
 
     If vis: plot distribution over vocab for next word, given the past BPTT
+    If verbose: get ready for too many prints
+
+    Hyperparameters:
+    - decode_sample_topp_threshold: try 0.5 to 0.9 for
+    - beta 1.0 works OK, above 2.0 seems close to greedy. note beta=1.0 implicitly used in training
+
+    See also: https://huggingface.co/blog/how-to-generate
     """
     # decoder hyperparameters
-    DECODE_SAMPLE_BETA = 0.9  #1.2  # above 2 seems too high
-    DECODE_SAMPLE_SEED = 104  # 103
-    DECODE_SAMPLE_TOPP_THRESHOLD = 0.85
-    np.random.seed(DECODE_SAMPLE_SEED)
+    np.random.seed(decode_seed)
 
     total_text_string = text_prompt  # this will be extended by tokens_to_gen
 
@@ -46,8 +57,9 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
         text_split, tokenized_text = tokenize_some_text(text=text_prompt)
         nn = tokenized_text.shape[0]
 
-        print(tokenized_text)
-        print(nn)
+        if verbose:
+            print(tokenized_text)
+            print(nn)
 
         if nn > BPTT:  # take last BPTT elements
             input_slice = tokenized_text[nn-BPTT:]
@@ -96,8 +108,9 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
             # numerically stable approach: gumbel max-trick sampling
             next_word_weights = out[nn-1, 0].detach().numpy()
             ncategories = next_word_weights.shape[0]
-            next_word_weights_scaled = DECODE_SAMPLE_BETA * next_word_weights
-            print("ncategories", ncategories)
+            next_word_weights_scaled = decode_beta * next_word_weights
+            if verbose:
+                print("ncategories", ncategories)
             uvec = np.random.rand(ncategories)
             gvec = -np.log(-np.log(uvec))
             guessed_int = np.argmax(gvec + next_word_weights_scaled)
@@ -106,19 +119,20 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
             # TODO implement gumbel max trick here too
             print('TODO implement gumbel max trick for decode_style == sample_topp')
             next_word_weights = out[nn-1, 0].detach().numpy()
-            next_word_weights_exp = np.exp(DECODE_SAMPLE_BETA * next_word_weights)
+            next_word_weights_exp = np.exp(decode_beta * next_word_weights)
             next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
             # 1) identify top p words such their cumulative probability passes threshold
             distribution_sorted_indices = np.argsort(next_word_probs)[::-1]
             next_word_probs_descsort = next_word_probs[distribution_sorted_indices]
             next_word_probs_descsort_cumsum = np.cumsum(next_word_probs_descsort)
             threshold_index = np.searchsorted(next_word_probs_descsort_cumsum,
-                                              DECODE_SAMPLE_TOPP_THRESHOLD)
+                                              decode_sample_topp_threshold)
             # 2) sample from these top p words
             topp_indices = distribution_sorted_indices[:threshold_index + 1]
-            print(distribution_sorted_indices)
-            print(next_word_probs_descsort_cumsum)
-            print("topp_indices", len(topp_indices), topp_indices)
+            if verbose:
+                print(distribution_sorted_indices)
+                print(next_word_probs_descsort_cumsum)
+                print("topp_indices", len(topp_indices), topp_indices)
             topp_probs = next_word_probs_descsort[:threshold_index + 1]
             topp_reweighted_probs = topp_probs / np.sum(topp_probs)
             topp_reweighted_cumsum = np.cumsum(topp_reweighted_probs)
@@ -131,8 +145,9 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
     prompt_split, src, src_mask = process_prompt()  # src should be in form ntokens x nbatches
     nn = src_mask.shape[0]
     src.reshape((nn, 1))
-    print(src)
-    print(src_mask)
+    if verbose:
+        print(src)
+        print(src_mask)
 
     # 2)
     model.eval()
@@ -155,7 +170,8 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
             #print(src_mask)
 
         out = model.forward(src, src_mask)
-        print(out.shape)
+        if verbose:
+            print(out.shape)
 
         if vis:
             next_word_weights = out[nn-1, 0].detach().numpy()
@@ -172,7 +188,7 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
             plt.plot(next_word_probs)
             plt.title('next_word_probs: iteration %d' % idx)
             plt.xlabel('vocab index')
-            plt.ylabel('weight')
+            plt.ylabel('probability')
             #plt.xlim((-0.5,100.5))
             plt.show()
 
@@ -185,11 +201,13 @@ def gen_some_text(model, vocab, device, text_prompt='The dog ran across the', to
             plt.xticks(x, [vocab.itos[k] for k in top_word_indices[0:kk]], rotation=60)
             plt.plot(x, top_word_probs[0:kk])
             plt.ylabel('probability')
+            plt.gcf().subplots_adjust(bottom=0.15)
             plt.show()
 
         next_guess_int = decode(out, style=decode_style)
         next_guess_string = vocab.itos[next_guess_int]
-        print('next_guess_int, next_guess_string:', next_guess_int, next_guess_string)
+        if verbose:
+            print('next_guess_int, next_guess_string:', next_guess_int, next_guess_string)
 
         # update total_text_string by adding best guess
         total_text_string += ' %s' % next_guess_string
@@ -217,38 +235,42 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # specify path to model or model_weights
-    epoch = 100
-    model_path_A = DIR_MODELS + os.sep + 'model_epoch%d.pth' % epoch
-    model_path_B = DIR_MODELS + os.sep + 'model_weights_epoch%d.pth' % epoch
+    fname = 'bestval_model.pth'  # 'end_model.pth' or 'bestval_model.pth'
+    adam_dir = 'modelB_epoch50_batch128_adamW1e-4_drop0.1_bptt35'
+    sgd_dir = 'modelB_epoch150_batch64_sgdLRstep0.5_thirdCycle_drop0.3_bptt35'
+    model_adam = DIR_MODELS + os.sep + adam_dir + os.sep + fname
+    model_sgd = DIR_MODELS + os.sep + sgd_dir + os.sep + fname
+    model_path = model_sgd
 
     # load dataset, tokenizer, vocab
     tokenizer, vocab = gen_tokenizer_and_vocab()
     train_iter, val_iter, test_iter = WikiText2()
 
-    # load method A and B
-    model_A = load_model(model_path_A, device, as_pickle=True, vocab=None)
-    model_B = load_model(model_path_B, device, as_pickle=False, vocab=vocab)
+    # load method A
+    model_A = load_model(model_path, device, as_pickle=True, vocab=None)
 
-    # inspect both models
+    # inspect model
     print('model_A info...\n', model_A)
-    print('\nmodel_B info...\n', model_B)
-
-    print('model_A == model_B:', model_A == model_B)
 
     # Text generation example
-    prompt = 'Text generation is easier than you think , however'
-    #prompt = 'The dog ran across the'
-    ngen = 60
-    decode_style = 'sample_full'
-    generated_text = gen_some_text(
-        model_A, vocab, device, text_prompt=prompt, tokens_to_gen=ngen, vis=False,
-        decode_style=decode_style)
+    #prompt = 'Text generation is easier than you think , however'
+    #prompt = 'Text generation is easier than you think , however , ' \
+    #         'training the underlying model is significantly more challenging'
+    prompt = 'The dog ran across the'
+    ngen = 120
+    decode_style = 'sample_full'  # sample_topp, sample_full, or greedy
     print("Text prompt:\n", prompt)
+    print("Decode style:", decode_style)
     print("Number of tokens to generate:", ngen)
-    print("Generated_text:\n", generated_text)
 
-    # TODO: alternative generation
-    # currently 'greedy method'
-    # see: https://huggingface.co/blog/how-to-generate
-
-    #  The dog ran across the series to cover , allowing it as a tenant of the game of a theory . according to the characters were painted by the set controllers , they used by ministers and also been provided by an artificial <unk> , also found involved , so , but it was unlocked , and drew at the same same year over the
+    for decode_seed in range(0,4):
+        generated_text = gen_some_text(
+            model_A, vocab, device,
+            text_prompt=prompt,
+            tokens_to_gen=ngen,
+            decode_style=decode_style,
+            decode_seed=decode_seed,
+            decode_beta=1.0,
+            vis=False,
+            verbose=False)
+        print("(seed=%d) Generated_text:\n%s" % (decode_seed, generated_text))
