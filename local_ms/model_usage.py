@@ -28,6 +28,7 @@ def gen_some_text(model, vocab, device,
                   tokens_to_gen=10,
                   vis=False,
                   verbose=True,
+                  sidestep_unk = False,
                   decode_style='greedy',
                   decode_seed=0,
                   decode_beta=1.0,
@@ -38,6 +39,7 @@ def gen_some_text(model, vocab, device,
 
     If vis: plot distribution over vocab for next word, given the past BPTT
     If verbose: get ready for too many prints
+    If sidestep_unk, guess the next most probable word whenever <unk> would have been guessed
 
     Hyperparameters:
     - decode_sample_topp_threshold: try 0.5 to 0.9 for
@@ -48,7 +50,8 @@ def gen_some_text(model, vocab, device,
     # decoder hyperparameters
     np.random.seed(decode_seed)
 
-    total_text_string = text_prompt  # this will be extended by tokens_to_gen
+    #total_text_string = text_prompt  # this will be extended by tokens_to_gen
+    total_text_string = ''
 
     def process_prompt(dummy_token=0):
         # Two cases:
@@ -74,7 +77,7 @@ def gen_some_text(model, vocab, device,
 
         return text_split, src, src_mask
 
-    def decode(model_out, style='greedy'):
+    def decode(model_out, nn, style='greedy'):
         """
         Sampling notes:
         - working in log space to improve numeric stability
@@ -170,6 +173,13 @@ def gen_some_text(model, vocab, device,
             #print(src_mask)
 
         out = model.forward(src, src_mask)
+
+        if sidestep_unk:
+            unk_index = vocab.unk_index
+            #print(out.size(), unk_index, vocan.itos[unk_index])
+            MODEL_OUTPUT_MINIMAL = -1e9
+            out[:, :, unk_index] = MODEL_OUTPUT_MINIMAL
+
         if verbose:
             print(out.shape)
 
@@ -204,7 +214,7 @@ def gen_some_text(model, vocab, device,
             plt.gcf().subplots_adjust(bottom=0.15)
             plt.show()
 
-        next_guess_int = decode(out, style=decode_style)
+        next_guess_int = decode(out, nn, style=decode_style)
         next_guess_string = vocab.itos[next_guess_int]
         if verbose:
             print('next_guess_int, next_guess_string:', next_guess_int, next_guess_string)
@@ -240,6 +250,8 @@ if __name__ == '__main__':
     sgd_dir = 'modelB_epoch150_batch64_sgdLRstep0.5_thirdCycle_drop0.3_bptt35'
     model_adam = DIR_MODELS + os.sep + adam_dir + os.sep + fname
     model_sgd = DIR_MODELS + os.sep + sgd_dir + os.sep + fname
+
+    #model_path = model_adam
     model_path = model_sgd
 
     # load dataset, tokenizer, vocab
@@ -254,9 +266,9 @@ if __name__ == '__main__':
 
     # Text generation example
     #prompt = 'Text generation is easier than you think , however'
-    #prompt = 'Text generation is easier than you think , however , ' \
-    #         'training the underlying model is significantly more challenging'
-    prompt = 'The dog ran across the'
+    prompt = 'Text generation is easier than you think. More challenging , however , ' \
+             'is training the underlying model to generate believable text. In fact,'
+    #prompt = 'The dog ran across the'
     ngen = 120
     decode_style = 'sample_full'  # sample_topp, sample_full, or greedy
     print("Text prompt:\n", prompt)
@@ -270,7 +282,8 @@ if __name__ == '__main__':
             tokens_to_gen=ngen,
             decode_style=decode_style,
             decode_seed=decode_seed,
-            decode_beta=1.0,
+            decode_beta=2.0,
+            sidestep_unk=True,
             vis=False,
             verbose=False)
         print("(seed=%d) Generated_text:\n%s" % (decode_seed, generated_text))
