@@ -53,7 +53,7 @@ class ArxivDataset(Dataset):
 
     def get_instance_pretransform(self, idx):
         # returns some form of the text which will be our sample
-        return self.data_raw['summary'][idx]
+        return self.data_raw['title'][idx]
 
     def get_instance_transformed(self, idx):
         """
