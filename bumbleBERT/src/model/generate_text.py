@@ -26,7 +26,7 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
             1) Split by spaces into word tokens
             2) Use vocab to creat integer rep of each token
         """
-        tokenized_text_ints = torch.tensor( tokenizer(text)['input_ids'], dtype=torch.long)
+        tokenized_text_ints = torch.tensor( tokenizer(text)['input_ids'][:-1], dtype=torch.long)
         return tokenized_text_ints
 
     def process_prompt(dummy_token=0):
@@ -35,9 +35,6 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
         # - if longer than maxLen (context length), truncate to maxLen
         tokenized_text = tokenize_some_text(text=text_prompt)
         nn = tokenized_text.shape[0]
-
-        print(tokenized_text)
-        print(nn)
 
         if nn > maxLen:  # take last maxLen elements
             input_slice = tokenized_text[nn-maxLen:]
@@ -114,21 +111,19 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
             unirand = np.random.rand()
             topp_choice = np.searchsorted(topp_reweighted_cumsum, unirand)
             guessed_int = topp_indices[topp_choice]
+        print(model_out[nn-1,0])
         return guessed_int
 
     # 1) tokenize the text prompt and prepare associated src_mask for model.forward()
     src, src_mask = process_prompt(tokenizer.get_vocab()["<pad>"])  # src should be in form ntokens x nbatches
     nn = src_mask.shape[0]
     src.reshape((nn, 1))
-    print(src)
-    print(src_mask)
 
     # 2)
     model.eval()
     for idx in range(tokens_to_gen):
-
         running_context_string = ' '.join([tokenizer.decode(src[k]) for k in range(src.shape[0])])
-
+        print(running_context_string)
         # TESTING DIFFERENT src_mask (all zero)
         use_diff_mask = False
         if use_diff_mask:
@@ -179,10 +174,11 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
         next_guess_int = decode(out, style=decode_style)
 
         next_guess_string = tokenizer.decode(int(next_guess_int))
-        print('next_guess_int, next_guess_string:', next_guess_int, next_guess_string)
 
         # update total_text_string by adding best guess
         total_text_string += ' %s' % next_guess_string
+
+        print(total_text_string)
 
         # update src and src mask for next pass of model.forward()
         if nn < maxLen:

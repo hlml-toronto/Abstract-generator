@@ -10,7 +10,7 @@ from src.model.batching import CustomBatch
 #from src.model.transformer import make_gpt_model # imports don't work
 
 # PARAMETERS
-maxLen  = 35 # maximumsentence length
+maxLen  = 35 # maximum sentence length
 bsz     = 3 # batch size
 vocabSize = None # None if you want to let tokenizer do its thing
 emsize = 200 # embedding dimension
@@ -18,7 +18,10 @@ nhid = 200 # the dimension of the feedforward network model in torch.nn.Transfor
 nlayers = 2 # the number of torch.nn.TransformerEncoderLayer in torch.nn.TransformerEncoder
 nhead = 2 # the number of heads in the multiheadattention models
 dropout = 0.2 # the dropout value
+
+#
 tknzerType = 'BPE' # type of tokenizing algorithm
+
 trainTokenizer = False
 download = False
 nbrSamples = 1000

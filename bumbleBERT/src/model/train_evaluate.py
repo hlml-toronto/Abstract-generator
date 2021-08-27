@@ -1,4 +1,6 @@
-import time, torch, math
+import time
+import torch
+import math
 # training function - same as in hugging face
 def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, scheduler_, criterion_ ):
     """
