@@ -8,3 +8,5 @@ local_ms/models/
 local_ms/notebooks/.data/
 local_ms/notebooks/output/
 local_ms/saved/
+
+local_ms/notebooks/STORED_OUTPUT/

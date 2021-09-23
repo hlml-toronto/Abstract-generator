@@ -1,6 +1,7 @@
 import urllib.request
 import feedparser
-import csv, os
+import csv
+import os
 from src.default import RAW_DATA_DIR
 
 def arxiv_api(raw_data_dir, filename, start=0, max_results=11, search_query='all:electron'):

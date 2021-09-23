@@ -8,7 +8,7 @@ from torchtext.datasets import WikiText2
 from model import TransformerModel, PositionalEncoding  # need all class definitions for un-pickle
 from model import load_model, evaluate
 from model_utils import gen_tokenizer_and_vocab, data_process, batchify
-from settings import DIR_MODELS, BPTT
+from settings import DIR_MODELS
 
 if __name__ == '__main__':
     """
@@ -20,8 +20,9 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # specify path to model or model_weights
-    model_path_A = DIR_MODELS + os.sep + 'model_epoch20.pth'
-    model_path_B = DIR_MODELS + os.sep + 'model_weights_epoch20.pth'
+    #model_path_A = DIR_MODELS + os.sep + 'model_epoch20.pth'
+    #model_path_A = DIR_MODELS + os.sep + 'modelB_epoch50_batch128_adamW1e-4_bptt35' + os.sep + 'bestval_model.pth'
+    model_path_A = DIR_MODELS + os.sep + 'modelB_epoch50_batch128_adamW1e-4_bptt35' + os.sep + 'end_model.pth'
 
     # load dataset, tokenizer, vocab
     tokenizer, vocab = gen_tokenizer_and_vocab()
@@ -29,8 +30,7 @@ if __name__ == '__main__':
 
     # load method A and B
     model_A = load_model(model_path_A, device, as_pickle=True, vocab=None)
-    model_B = load_model(model_path_B, device, as_pickle=False, vocab=vocab)
-    
+
     # data loading
     train_data = data_process(train_iter, vocab, tokenizer)
     val_data = data_process(val_iter, vocab, tokenizer)
