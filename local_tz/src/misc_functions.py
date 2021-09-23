@@ -26,3 +26,15 @@ def attention(query, key, value, mask=None, dropout=None):
 def clones(module, N):
 	"""Produce N identical layers."""
 	return nn.ModuleList([copy.deepcopy(module) for _ in range(N)]) # holds submodules in a list
+
+def make_std_mask(tgt, pad):
+    """Create a mask to hide padding and future words."""
+    ## tgt has shape [30, 9], after unsqueeze has shape [30, 1, 9]
+    tgt_mask = (tgt != pad).unsqueeze(-2)
+    # set type of return value of subsequent_mask to same as tgt_mask.data
+    
+    ## subsequent_mask is bool tensor with upper diagonal set to False (shape [1, 9, 9])
+    ## tgt_mask is true wherever tgt is not equal to pad
+    tgt_mask = tgt_mask & subsequent_mask(tgt.size(-1)).type_as(tgt_mask.data)
+    # & takes intersection of two sets, final shape is [30, 9, 9]
+    return tgt_mask
