@@ -83,6 +83,8 @@ def run_epoch(data_iter, model, loss_compute):
 	tokens = 0
 	for i, batch in enumerate(data_iter):
 		out = model.forward(batch.trg, batch.trg_mask)
+		print(batch.trg[0])
+		print(batch.trg_mask[0])
 		loss = loss_compute(out, batch.trg_y, batch.ntokens)
 		total_loss += loss
 		total_tokens += batch.ntokens
@@ -157,21 +159,31 @@ def data_gen(V, batch, nbatches):
 
 	for i in range(nbatches):
 
-		A = np.tile(np.arange(10), batch)
+		A = np.tile(np.arange(1,11), batch)
 		A = A.reshape(batch, 10)
 
 		rows, column_indices = np.ogrid[:A.shape[0], :A.shape[1]]
 
-		# Use always a negative shift, so that column_indices are valid.
-		# (could also use module operation)
+		## Use always a negative shift, so that column_indices are valid.
+		## (could also use module operation)
 		r = np.random.randint(-9, 1, size=batch)
 		r[r < 0] += A.shape[1]
 		column_indices = column_indices - r[:, np.newaxis]
 
 		result = A[rows, column_indices]
+
+		## Add random padding
+		num_pad = np.random.poisson(2, size=batch)
+		# print(num_pad)
+		for j in range(batch):
+			if num_pad[j] == 0:
+				pass
+			else:
+				result[j, -num_pad[j]:] = 0
+
 		data = torch.from_numpy(result)
 		tgt = data
-		# print(result)
+		# print(tgt)
 		yield Batch(tgt, 0)
 
 class SimpleLossCompute:
