@@ -12,7 +12,7 @@ from model_utils import gen_tokenizer_and_vocab, data_process, batchify
 from settings import DIR_MODELS, BPTT
 
 
-def tokenize_some_text(text='The dog ran across the'):
+def tokenize_some_text(tokenizer, text='The dog ran across the'):
     """
     Current vanilla pytorch tokenizer
         1) Split by spaces into word tokens
@@ -23,7 +23,7 @@ def tokenize_some_text(text='The dog ran across the'):
     return tokenized_text, tokenized_text_ints
 
 
-def gen_some_text(model, vocab, device,
+def gen_some_text(model, tokenizer, vocab, device,
                   text_prompt='The dog ran across the',
                   tokens_to_gen=10,
                   vis=False,
@@ -57,7 +57,7 @@ def gen_some_text(model, vocab, device,
         # Two cases:
         # - if less than BPTT (context length), need to add dummy tokens
         # - if longer than BPTT (context length), truncate to BPTT
-        text_split, tokenized_text = tokenize_some_text(text=text_prompt)
+        text_split, tokenized_text = tokenize_some_text(tokenizer, text=text_prompt)
         nn = tokenized_text.shape[0]
 
         if verbose:
@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
     for decode_seed in range(0,4):
         generated_text = gen_some_text(
-            model_A, vocab, device,
+            model_A, tokenizer, vocab, device,
             text_prompt=prompt,
             tokens_to_gen=ngen,
             decode_style=decode_style,
