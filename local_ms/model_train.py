@@ -43,7 +43,7 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
     lr = 5.0  # learning rate
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95)  # or None
 
     best_val_loss = float("inf")
     epochs = 3  # The number of epochs
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     for epoch in range(1, epochs + 1):
         epoch_start_time = time.time()
-        train(model, device, train_data, ntokens, optimizer, scheduler, criterion, epoch)
+        train(model, device, train_data, ntokens, optimizer, criterion, epoch, scheduler=scheduler)
         val_loss = evaluate(model, val_data, device, ntokens, criterion)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
