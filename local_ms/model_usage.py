@@ -71,10 +71,8 @@ def gen_some_text(model, tokenizer, vocab, device,
             input_slice = tokenized_text[0:nn]
             src_mask = model.generate_square_subsequent_mask(nn).to(device)
 
-        src = torch.zeros((min(nn, BPTT), 1), dtype=torch.long)
+        src = torch.zeros((min(nn, BPTT), 1), dtype=torch.long).to(device)
         src[0:nn, 0] = input_slice
-        src.to(device)
-
         return text_split, src, src_mask
 
     def decode(model_out, nn, style='greedy'):
@@ -109,7 +107,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             print()"""
 
             # numerically stable approach: gumbel max-trick sampling
-            next_word_weights = out[nn-1, 0].detach().numpy()
+            next_word_weights = out[nn-1, 0].cpu().detach().numpy()
             ncategories = next_word_weights.shape[0]
             next_word_weights_scaled = decode_beta * next_word_weights
             if verbose:
@@ -121,7 +119,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             assert style == 'sample_topp'
             # TODO implement gumbel max trick here too
             print('TODO implement gumbel max trick for decode_style == sample_topp')
-            next_word_weights = out[nn-1, 0].detach().numpy()
+            next_word_weights = out[nn-1, 0].cpu().detach().numpy()
             next_word_weights_exp = np.exp(decode_beta * next_word_weights)
             next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
             # 1) identify top p words such their cumulative probability passes threshold
@@ -147,6 +145,7 @@ def gen_some_text(model, tokenizer, vocab, device,
     # 1) tokenize the text prompt and prepare associated src_mask for model.forward()
     prompt_split, src, src_mask = process_prompt()  # src should be in form ntokens x nbatches
     nn = src_mask.shape[0]
+
     src.reshape((nn, 1))
     if verbose:
         print(src)
@@ -171,6 +170,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             # C:
             #src_mask = torch.rand(nn, nn)
             #print(src_mask)
+            src_mask.to(device)
 
         out = model.forward(src, src_mask)
 
