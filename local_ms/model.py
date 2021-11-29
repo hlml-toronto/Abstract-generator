@@ -150,7 +150,7 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-def train(model, device, train_data, ntokens, optimizer, criterion, epoch, scheduler=None):
+def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, epoch):
     model.train() # Turn on the train mode
     total_loss = 0.
     start_time = time.time()
@@ -178,10 +178,11 @@ def train(model, device, train_data, ntokens, optimizer, criterion, epoch, sched
         if batch % log_interval == 0 and batch > 0:
             cur_loss = total_loss / log_interval
             elapsed = time.time() - start_time
-            if scheduler is not None:
-                last_lr = scheduler.get_last_lr()[0]
-            else:
-                last_lr = lr
+            #if scheduler is not None:
+            #    last_lr = scheduler.get_last_lr()[0]
+            #else:
+            #    last_lr = lr
+            last_lr = scheduler.get_last_lr()[0]
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
                   'lr {:02.2f} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(

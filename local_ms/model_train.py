@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     for epoch in range(1, epochs + 1):
         epoch_start_time = time.time()
-        train(model, device, train_data, ntokens, optimizer, criterion, epoch, scheduler=scheduler)
+        train(model, device, train_data, ntokens, optimizer, scheduler, criterion, epoch)
         val_loss = evaluate(model, val_data, device, ntokens, criterion)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
