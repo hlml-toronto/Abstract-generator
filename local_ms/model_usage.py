@@ -12,7 +12,7 @@ from model_utils import gen_tokenizer_and_vocab, data_process, batchify
 from settings import DIR_MODELS, BPTT
 
 
-def tokenize_some_text(tokenizer, text='The dog ran across the'):
+def tokenize_some_text(tokenizer, vocab, text='The dog ran across the'):
     """
     Current vanilla pytorch tokenizer
         1) Split by spaces into word tokens
@@ -57,7 +57,7 @@ def gen_some_text(model, tokenizer, vocab, device,
         # Two cases:
         # - if less than BPTT (context length), need to add dummy tokens
         # - if longer than BPTT (context length), truncate to BPTT
-        text_split, tokenized_text = tokenize_some_text(tokenizer, text=text_prompt)
+        text_split, tokenized_text = tokenize_some_text(tokenizer, vocab, text=text_prompt)
         nn = tokenized_text.shape[0]
 
         if verbose:
