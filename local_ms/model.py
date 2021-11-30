@@ -151,6 +151,9 @@ class PositionalEncoding(nn.Module):
 
 
 def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, epoch):
+    """
+    scheduler: either an int/float (fixed learning rate) or a scheduler torch object
+    """
     model.train() # Turn on the train mode
     total_loss = 0.
     start_time = time.time()
@@ -178,13 +181,13 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
         if batch % log_interval == 0 and batch > 0:
             cur_loss = total_loss / log_interval
             elapsed = time.time() - start_time
-            #if scheduler is not None:
-            #    last_lr = scheduler.get_last_lr()[0]
-            #else:
-            #    last_lr = lr
-            last_lr = scheduler.get_last_lr()[0]
+            if isinstance(scheduler, int) or isinstance(scheduler, float):
+                last_lr = scheduler
+            else:
+                last_lr = scheduler.get_last_lr()[0]
+
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
-                  'lr {:02.2f} | ms/batch {:5.2f} | '
+                  'lr {:2e} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch, len(train_data) // BPTT, last_lr,
                               elapsed * 1000 / log_interval,
