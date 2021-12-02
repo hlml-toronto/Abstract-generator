@@ -1,6 +1,7 @@
 import math
 import time
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
@@ -150,11 +151,18 @@ class PositionalEncoding(nn.Module):
 
 
 def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, epoch):
-    model.train()  # set to: train mode
+    """
+    scheduler: either an int/float (fixed learning rate) or a scheduler torch object
+    """
+    model.train() # Turn on the train mode
     total_loss = 0.
     start_time = time.time()
     src_mask = model.generate_square_subsequent_mask(BPTT).to(device)
-    for batch, i in enumerate(range(0, train_data.size(0) - 1, BPTT)):
+
+    batch_indices = np.arange(0, train_data.size(0) - 1, BPTT)
+    loss_per_batch = 0.0 * batch_indices  # record the training loss for each batch
+
+    for batch, i in enumerate(batch_indices):
         data, targets = get_batch(train_data, i)
         optimizer.zero_grad()
         if data.size(0) != BPTT:
@@ -165,19 +173,28 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
 
+        # TODO check if scaling is correct
+        loss_per_batch[batch] = loss
+
         total_loss += loss.item()
         log_interval = 200
         if batch % log_interval == 0 and batch > 0:
             cur_loss = total_loss / log_interval
             elapsed = time.time() - start_time
+            if isinstance(scheduler, int) or isinstance(scheduler, float):
+                last_lr = scheduler
+            else:
+                last_lr = scheduler.get_last_lr()[0]
+
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
-                  'lr {:02.2f} | ms/batch {:5.2f} | '
+                  'lr {:2e} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, batch, len(train_data) // BPTT, scheduler.get_last_lr()[0],
+                epoch, batch, len(train_data) // BPTT, last_lr,
                               elapsed * 1000 / log_interval,
                 cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
+    return loss_per_batch
 
 
 def evaluate(eval_model, data_source, device, ntokens, criterion):
