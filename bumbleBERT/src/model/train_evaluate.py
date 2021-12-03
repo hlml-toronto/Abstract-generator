@@ -2,7 +2,7 @@ import time
 import torch
 import math
 # training function - same as in hugging face
-def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, scheduler_, criterion_ ):
+def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, scheduler_, criterion_):
     """
     Training loop that takes batches from dataLoader and pushes them to device
     to train. Will check if they're the same size of maxLen: if shorter, will
@@ -27,12 +27,14 @@ def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, sche
     for i, batch in enumerate(dataLoader):
         #print((batch.src).is_pinned())
         src = (batch.src).to(device); tgt = (batch.tgt).to(device)
+        src_pad_mask = (batch.src_pad_mask).to(device)
+        #tgt_pad_mask = (batch.tgt_pad_mask).to(device)
 
         optimizer_.zero_grad()
         if src.size(0) != maxLen:
             src_mask = model.generate_square_subsequent_mask(src.size(0)).to(device)
 
-        output = model(src, src_mask)
+        output = model(src, src_mask, src_pad_mask.T)
         loss = criterion_(output.view(-1, vocabSize), tgt.reshape(-1))
         loss.backward()
         torch.torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
@@ -79,8 +81,6 @@ def evaluate(eval_model, maxLen, dataLoader, nbrSamples, device, vocabSize, crit
                                                     src.size(0)).to(device)
             output = eval_model(src, src_mask)
             output_flat = output.view(-1, vocabSize)
-            print("length of src :",len(src))
-            print(len(src))
-            total_loss += len(src) * criterion_(output_flat
-                                                , tgt.reshape(-1)).item()
+            total_loss += len(src) * criterion_(output_flat,
+                                                tgt.reshape(-1) ).item()
     return total_loss / (nbrSamples - 1) # nbrSamples -x-> len(dataLoader)
