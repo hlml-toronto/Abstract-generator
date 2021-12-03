@@ -48,12 +48,12 @@ class ArxivDataset(Dataset):
 
     def set_transform(self, transform):
         # can set transform and will change how we get an instance
-        self.transform = transform
+        self.transform = transform # transform.encode could be used with rawTokenizer (instead of FastTokenizer)
         self.get_instance = self.get_instance_transformed
 
     def get_instance_pretransform(self, idx):
         # returns some form of the text which will be our sample
-        return self.data_raw['title'][idx]
+        return self.data_raw['summary'][idx]
 
     def get_instance_transformed(self, idx):
         """
@@ -64,8 +64,8 @@ class ArxivDataset(Dataset):
         Return
             transformed sample
         """
-
         instance = self.get_instance_pretransform(idx)
+
         # tokenize on-the-fly
         instance = self.transform( instance
                                     #, max_length=self.maxLen+1
@@ -88,9 +88,11 @@ class ArxivDataset(Dataset):
         }
     """
 
-
-class WikiTextCustom(Dataset):
+class WikiText2Dataset(Dataset):
     def __init__(self, csvfile):
+        from torchtext.datasets import WikiText2
+
+        train_iter, val_iter, test_iter = WikiText2(root=DATADIR)
         self.dataRaw = pd.read_csv(csvfile)
         self.arraySamples = []
         for i in np.arange(0,len(self.dataRaw)//bptt):

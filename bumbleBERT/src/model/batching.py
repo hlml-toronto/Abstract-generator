@@ -36,7 +36,9 @@ class CustomBatch():
         # stack all, change to dim = 0 for annotated transformer?
         self.src = (torch.stack([x[:-1] for x in batch], dim=stackDim)).long()
         self.tgt = (torch.stack([x[1:] for x in batch], dim=stackDim)).long()
-        #self.pad_mask = (torch.stack([x[1:] for x in batch], dim=stackDim)).long()
+        self.src_pad_mask = (self.src == self.padValue)
+        #self.src_pad_mask = torch.transpose( (self.src != self.padValue).type(torch.int), 0, 1 )
+        #self.tgt_pad_mask = (self.tgt != self.padValue).type(torch.int)
         #ys = torch.LongTensor(map(lambda x: x[1], batch))
 
     def pad_tensor(self, vec):
