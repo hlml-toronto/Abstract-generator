@@ -1,8 +1,14 @@
 import os
+import sys
 
-DIR_DATA = '../data'
-DIR_TOKENIZERS = '../tokenizers'
-DIR_MODELS = '../models'
+
+DIR_CURRENT = os.path.dirname(__file__)
+DIR_ROOT = os.path.dirname(DIR_CURRENT)
+sys.path.append(DIR_ROOT)
+
+DIR_DATA = DIR_ROOT + os.sep + 'saved_data'
+DIR_TOKENIZERS = DIR_ROOT + os.sep + 'saved_tokenizers'
+DIR_MODELS = DIR_ROOT + os.sep + 'saved_models'
 
 DEFAULT_ARXIV_DATASET = 'raw_arxiv_10.csv'
 VALID_DATASETS = ['wikitext-2', 'wikitext-103', 'arxiv']

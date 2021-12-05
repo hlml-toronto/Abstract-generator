@@ -1,11 +1,13 @@
+import __init__  # For now, needed for all the relative imports
+
 import csv
 import os
 
-from local_ms.src.settings import DIR_DATA, DEFAULT_ARXIV_DATASET, VALID_DATASETS
+from src.settings import DIR_DATA, DEFAULT_ARXIV_DATASET, VALID_DATASETS
 
 
 def read_arxiv_data_raw():
-    """
+    """6
     Returns:
          - fields: list of headings for each data column
          - rows:   list of lists, each containing the data for given row
