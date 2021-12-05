@@ -4,7 +4,7 @@ from torchtext.data.utils import get_tokenizer
 from collections import Counter
 from torchtext.legacy.vocab import Vocab as RetiredVocab
 
-from settings import BPTT
+from local_ms.src.settings import BPTT
 
 
 def gen_tokenizer_and_vocab():

@@ -1,8 +1,8 @@
 import os
 
-DIR_DATA = 'data'
-DIR_TOKENIZERS = 'tokenizers'
-DIR_MODELS = 'models'
+DIR_DATA = '../data'
+DIR_TOKENIZERS = '../tokenizers'
+DIR_MODELS = '../models'
 
 DEFAULT_ARXIV_DATASET = 'raw_arxiv_10.csv'
 VALID_DATASETS = ['wikitext-2', 'wikitext-103', 'arxiv']
