@@ -1,10 +1,12 @@
+import __init__  # For now, needed for all the relative imports
+
 import torch
+from collections import Counter
 from torchtext.datasets import WikiText2
 from torchtext.data.utils import get_tokenizer
-from collections import Counter
 from torchtext.legacy.vocab import Vocab as RetiredVocab
 
-from local_ms.src.settings import BPTT
+from src.settings import BPTT
 
 
 def gen_tokenizer_and_vocab():

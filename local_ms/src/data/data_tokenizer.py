@@ -1,11 +1,14 @@
+import __init__  # For now, needed for all the relative imports
+
 import os
+
 from tokenizers import Tokenizer, decoders
 from tokenizers.models import BPE, WordLevel
-from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace, ByteLevel
+from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 
-from data_sanitize import clean_list_of_abstracts, load_dataset
-from local_ms.src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_DATASETS, VALID_TOKENIZATIONS
+from src.data.data_sanitize import load_dataset
+from src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_DATASETS, VALID_TOKENIZATIONS
 
 """
 Note: huggingface has two relevant classes: Tokenizer and Transformer

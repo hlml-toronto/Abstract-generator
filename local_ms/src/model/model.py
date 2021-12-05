@@ -1,3 +1,5 @@
+import __init__  # For now, needed for all the relative imports
+
 import math
 import time
 
@@ -6,8 +8,8 @@ import torch
 import torch.nn as nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
-from model_utils import get_batch
-from local_ms.src.settings import BPTT
+from src.model.model_utils import get_batch
+from src.settings import BPTT
 
 """
 See URL: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
