@@ -1,11 +1,11 @@
 import os
 from tokenizers import Tokenizer, decoders
-from tokenizers.models import BPE
-from tokenizers.trainers import BpeTrainer
+from tokenizers.models import BPE, WordLevel
+from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace, ByteLevel
 
-from data_sanitize import clean_list_of_abstracts
-from settings import DIR_DATA, DIR_TOKENIZERS
+from data_sanitize import clean_list_of_abstracts, load_dataset
+from settings import DIR_DATA, DIR_TOKENIZERS, VALID_DATASETS, VALID_TOKENIZATIONS
 
 """
 Note: huggingface has two relevant classes: Tokenizer and Transformer
@@ -45,7 +45,83 @@ See also:
 """
 
 
+def default_tpath(dataset, style):
+    tpath = DIR_TOKENIZERS + os.sep + '%s_%s.json' % (style, dataset)
+    return tpath
+
+
+def train_tokenizer_vocab(dataset, style='BPE', force_retrain=True):
+    """
+    if force_retrain: overwrite the stored tokenizer from tokenizers dir (by retraining)
+    else: load the tokenizer if it exists
+    """
+    assert dataset in VALID_DATASETS
+    assert style in VALID_TOKENIZATIONS
+
+    tpath_expected = default_tpath(dataset, style)
+
+    train = True
+    if not force_retrain and os.path.isfile(tpath_expected):
+        tokenizer = Tokenizer.from_file(tpath_expected)
+        train = False
+    else:
+        print('%s tokenizer file does not exist; training new tokenizer' % tpath_expected)
+
+    if train:
+
+        # load data associated with one of the valid datasets (from /data/ directory)
+        datafiles = load_dataset(dataset)
+
+        # Steps for each algo (e.g. BPE):
+        # - init Tokenizer using algo
+        # - specify algo specific trainer
+        # - specify any pre-processing of text (will affect decoding)
+        #   see: https://huggingface.co/docs/tokenizers/python/latest/components.html#decoders
+        # - different training calls if its the arxiv dataset or wikitext
+        #   see https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
+
+        if style == 'BPE':
+            tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
+            trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
+            tokenizer.pre_tokenizer = ByteLevel()
+            if dataset == 'arxiv':
+                tokenizer.train_from_iterator(datafiles, trainer=trainer)
+            else:
+                tokenizer.train(datafiles, trainer=trainer)
+            tokenizer.decoder = decoders.ByteLevel()
+
+        else:
+            assert style == 'WordLevel'
+            tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
+            trainer = WordLevelTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
+            tokenizer.pre_tokenizer = Whitespace()
+            if dataset == 'arxiv':
+                tokenizer.train_from_iterator(datafiles, trainer=trainer)
+            else:
+                tokenizer.train(datafiles, trainer=trainer)
+            tokenizer.decoder = decoders.WordPiece()  # WordPiece seems to work (adds back spaces)
+
+        # Save to tokenizers directory
+        tokenizer.save(tpath_expected)
+
+    # Generate vocab object based on tokenizer.decoder() method
+    # ... TODO implement the same vocabulary functionality, or ensure it is present in Tokenizer and then code it elsewhere...
+    # Features we need to match:
+    #   from torchtext.legacy.vocab import Vocab as RetiredVocab
+    #   ntokens = len(vocab.stoi) ---> ntokens = tokenizer.(...)
+    #   data = [torch.tensor([vocab[token] for token in tokenizer(item)],
+    #                         dtype=torch.long) for item in raw_text_iter]
+    #   tokenized_text_ints = torch.tensor([vocab[token] for token in tokenized_text], dtype=torch.long)
+    #   running_context_string = ' '.join([vocab.itos[src[k]] for k in range(src.shape[0])])
+    #   unk_index = vocab.unk_index
+    vocab = None
+
+    return tokenizer, vocab
+
+
+"""
 def train_BPE(use_arxiv=False, outpath=None):
+    # TODO merge into train_tokenizer general function
     # currently: arxiv or wiki dataset
 
     # specify algo
@@ -66,7 +142,7 @@ def train_BPE(use_arxiv=False, outpath=None):
         tokenizer.train_from_iterator(abstracts, trainer=trainer)
     else:
         # see https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
-        files = [DIR_DATA + os.sep + 'wikitext-103-raw' + os.sep + 'wiki.%s.raw' % a
+        files = [DIR_DATA + os.sep + 'wikitext-103' + os.sep + 'wiki.%s.raw' % a
                  for a in ["test", "train", "valid"]]
         tokenizer.train(files, trainer=trainer)
 
@@ -76,7 +152,7 @@ def train_BPE(use_arxiv=False, outpath=None):
         tokenizer.save(outpath)
 
     return tokenizer
-
+"""
 
 def train_wordpiece_bert():
     """
@@ -108,7 +184,7 @@ def train_wordpiece_bert():
     trainer = WordPieceTrainer(
         vocab_size=30522, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
     )
-    files = [DIR_DATA + os.sep + 'wikitext-103-raw' + os.sep + 'wiki.%s.raw' % a
+    files = [DIR_DATA + os.sep + 'wikitext-103' + os.sep + 'wiki.%s.raw' % a
              for a in ["test", "train", "valid"]]
     bert_tokenizer.train(files, trainer)
     bert_tokenizer.save(DIR_TOKENIZERS + os.sep + 'bert_wiki.json')
@@ -158,6 +234,18 @@ def tokenizer_examples(tokenizer, raw_tokenizer=True, title='default'):
 
 
 if __name__ == '__main__':
+    style = 'WordLevel'
+    dataset = 'wikitext-2'
+    tpath = default_tpath(dataset, style)
+    tokenizer, vocab = train_tokenizer_vocab(dataset, style=style, force_retrain=True)
+    #tokenizer_examples(tokenizer, raw_tokenizer=True, title='default_raw')
+
+    from transformers import PreTrainedTokenizerFast
+    fast_tokenizer = PreTrainedTokenizerFast(tokenizer_file=tpath)
+    tokenizer_examples(fast_tokenizer, raw_tokenizer=False, title='default_notraw')
+
+
+"""
     flag_retrain = False
     use_arxiv = False
 
@@ -191,3 +279,4 @@ if __name__ == '__main__':
     else:
         bert_tokenizer_trained = Tokenizer.from_file(DIR_TOKENIZERS + os.sep + 'bert_wiki.json')
     tokenizer_examples(bert_tokenizer_trained, raw_tokenizer=True, title='BERT_wordpiece')
+    """
