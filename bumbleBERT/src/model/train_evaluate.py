@@ -2,7 +2,7 @@ import time
 import torch
 import math
 # training function - same as in hugging face
-def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, scheduler_, criterion_):
+def train( model, dataLoader, device, vocabSize, epoch, optimizer_, scheduler_, criterion_, maxLen=None):
     """
     Training loop that takes batches from dataLoader and pushes them to device
     to train. Will check if they're the same size of maxLen: if shorter, will
@@ -11,11 +11,11 @@ def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, sche
 
     Input
         model (instance)        : model that is being trained
-        maxLen (int)            : maximum sentence length
         dataLoader (instance)   : dataloader that batches data into tensors
         optimizer (instance)    : Not sure what type optimizers are
         criterion               :
         device (str)            : gpu or cpu
+        maxLen (int)            : maximum sentence length if not None
     Output
         None
     """
@@ -23,7 +23,8 @@ def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, sche
     model.train() # Turn on the train mode
     total_loss = 0.
     start_time = time.time()
-    src_mask = model.generate_square_subsequent_mask(maxLen).to(device)
+    if maxLen is not None:
+        src_mask = model.generate_square_subsequent_mask(maxLen).to(device)
     for i, batch in enumerate(dataLoader):
         #print((batch.src).is_pinned())
         src = (batch.src).to(device); tgt = (batch.tgt).to(device)
@@ -57,7 +58,7 @@ def train( model, maxLen, dataLoader, device, vocabSize, epoch, optimizer_, sche
 
 
 # evaluation function outside of training - same as hugging face
-def evaluate(eval_model, maxLen, dataLoader, nbrSamples, device, vocabSize, criterion_):
+def evaluate(eval_model, dataLoader, device, vocabSize, criterion_, maxLen, nbrSamples):
     """
     Takes a trained model, puts it in evaluation mode to see how well it
     performs on another set of data.

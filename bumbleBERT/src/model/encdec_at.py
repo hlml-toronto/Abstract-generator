@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from model.layers import LayerNorm, clones
 
-
 class Encoder(nn.Module):
     "Core encoder is a stack of N layers"
 

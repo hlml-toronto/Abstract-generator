@@ -102,16 +102,16 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
                                               DECODE_SAMPLE_TOPP_THRESHOLD)
             # 2) sample from these top p words
             topp_indices = distribution_sorted_indices[:threshold_index + 1]
-            print(distribution_sorted_indices)
-            print(next_word_probs_descsort_cumsum)
-            print("topp_indices", len(topp_indices), topp_indices)
+            #print(distribution_sorted_indices)
+            #print(next_word_probs_descsort_cumsum)
+            #print("topp_indices", len(topp_indices), topp_indices)
             topp_probs = next_word_probs_descsort[:threshold_index + 1]
             topp_reweighted_probs = topp_probs / np.sum(topp_probs)
             topp_reweighted_cumsum = np.cumsum(topp_reweighted_probs)
             unirand = np.random.rand()
             topp_choice = np.searchsorted(topp_reweighted_cumsum, unirand)
             guessed_int = topp_indices[topp_choice]
-        print(model_out[nn-1,0])
+        #print(model_out[nn-1,0])
         return guessed_int
 
     # 1) tokenize the text prompt and prepare associated src_mask for model.forward()
