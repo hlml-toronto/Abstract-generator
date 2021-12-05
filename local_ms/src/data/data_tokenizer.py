@@ -5,7 +5,7 @@ from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace, ByteLevel
 
 from data_sanitize import clean_list_of_abstracts, load_dataset
-from settings import DIR_DATA, DIR_TOKENIZERS, VALID_DATASETS, VALID_TOKENIZATIONS
+from local_ms.src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_DATASETS, VALID_TOKENIZATIONS
 
 """
 Note: huggingface has two relevant classes: Tokenizer and Transformer

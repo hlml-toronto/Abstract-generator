@@ -1,7 +1,7 @@
 import csv
 import os
 
-from settings import DIR_DATA, DEFAULT_ARXIV_DATASET, VALID_DATASETS
+from local_ms.src.settings import DIR_DATA, DEFAULT_ARXIV_DATASET, VALID_DATASETS
 
 
 def read_arxiv_data_raw():

@@ -8,7 +8,7 @@ from torchtext.datasets import WikiText2
 
 from model import TransformerModel, train, evaluate, save_model
 from model_utils import data_process, batchify, gen_tokenizer_and_vocab
-from settings import DIR_MODELS
+from local_ms.src.settings import DIR_MODELS
 
 """
 Note: the ipynb has modified version of code below; this should be functionalized and integrated

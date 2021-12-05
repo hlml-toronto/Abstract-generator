@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 from model_utils import get_batch
-from settings import BPTT
+from local_ms.src.settings import BPTT
 
 """
 See URL: https://pytorch.org/tutorials/beginner/transformer_tutorial.html

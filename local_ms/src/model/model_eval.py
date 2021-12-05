@@ -8,7 +8,7 @@ from torchtext.datasets import WikiText2
 from model import TransformerModel, PositionalEncoding  # need all class definitions for un-pickle
 from model import load_model, evaluate
 from model_utils import gen_tokenizer_and_vocab, data_process, batchify
-from settings import DIR_MODELS
+from local_ms.src.settings import DIR_MODELS
 
 if __name__ == '__main__':
     """
