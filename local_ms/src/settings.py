@@ -15,7 +15,7 @@ VALID_DATASETS = ['wikitext-2', 'wikitext-103', 'arxiv']
 VALID_TOKENIZATIONS = ['BPE', 'WordLevel']
 
 # determines sequence length for get_batch(); used elsewhere e.g. train()
-BPTT = 35  # constant used by model.py and training notebook (acts as a max token context length)
+BPTT = 35  # constant used by OLD_model.py and training notebook (acts as a max token context length)
 
 for core_dir in [DIR_DATA, DIR_TOKENIZERS, DIR_MODELS]:
     if not os.path.exists(core_dir):
