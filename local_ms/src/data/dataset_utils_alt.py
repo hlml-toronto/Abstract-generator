@@ -1,15 +1,19 @@
+import __init__
+
 import csv
 import feedparser
+import numpy as np
 import urllib.request
 from pathlib import Path
 
-import numpy as np
 # bunch of tokenizer options
+from transformers import PreTrainedTokenizerFast, PreTrainedTokenizer
 from tokenizers import Tokenizer, normalizers, pre_tokenizers, decoders, processors
 from tokenizers.models import BPE, Unigram, WordLevel, WordPiece
 from tokenizers.pre_tokenizers import ByteLevel, Whitespace, Metaspace
 from tokenizers.trainers import BpeTrainer, UnigramTrainer, WordPieceTrainer, WordLevelTrainer
-from transformers import PreTrainedTokenizerFast, PreTrainedTokenizer
+
+from src.settings import VALID_TOKENIZATIONS
 
 
 def arxiv_api(file_path, max_results=11, search_query='all:electron'):
@@ -138,8 +142,8 @@ def train_custom_tokenizer(dataset, token_model, tknzr_file,
                           max_input_chars_per_word=max_input_chars_per_word)
         Trainer = WordPieceTrainer
     else:
-        error_msg = f'Error: token_model ({token_model}) not an algorithm in\
-                        [BPE, Unigram, WordLevel, WordPiece]'
+        error_msg = f'Error: token_model ({token_model}) not an algorithm in%s' \
+                    % VALID_TOKENIZATIONS
         raise SystemExit(error_msg)
 
     # instantiation
@@ -157,8 +161,7 @@ def train_custom_tokenizer(dataset, token_model, tknzr_file,
     tokenizer.normalizer = normalizers.Sequence([fcn() for fcn in normalizer_lst])
 
     # Set the pre-tokenizer
-    tokenizer.pre_tokenizer = pre_tokenizers.Sequence(
-                                    [fcn() for fcn in pre_tokenizer_lst] )
+    tokenizer.pre_tokenizer = pre_tokenizers.Sequence([fcn() for fcn in pre_tokenizer_lst])
 
     # Set the post-processing
     tokenizer.post_processor = processors.TemplateProcessing(
@@ -178,7 +181,7 @@ def train_custom_tokenizer(dataset, token_model, tknzr_file,
 
     # creating iterator
     def batch_iterator():
-        for i in np.arange(0,len(dataset)):
+        for i in np.arange(0, len(dataset)):
             yield dataset[i]
 
     # train call

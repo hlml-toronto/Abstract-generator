@@ -12,7 +12,7 @@ DIR_MODELS = DIR_ROOT + os.sep + 'saved_models'
 
 DEFAULT_ARXIV_DATASET = 'raw_arxiv_10.csv'
 VALID_DATASETS = ['wikitext-2', 'wikitext-103', 'arxiv']
-VALID_TOKENIZATIONS = ['BPE', 'WordLevel']
+VALID_TOKENIZATIONS = ['BPE', 'Unigram', 'WordLevel', 'WordPiece']
 
 # determines sequence length for get_batch(); used elsewhere e.g. train()
 BPTT = 35  # constant used by OLD_model.py and training notebook (acts as a max token context length)

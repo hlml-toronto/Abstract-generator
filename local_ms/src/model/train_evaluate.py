@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from src.model.model_utils import get_batch
-from settings import BPTT
+from src.settings import BPTT
 
 
 def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, epoch):
