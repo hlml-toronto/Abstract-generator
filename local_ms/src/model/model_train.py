@@ -8,7 +8,8 @@ import torch.nn as nn
 import torch
 from torchtext.datasets import WikiText2
 
-from src.model.model import TransformerModel, train, evaluate, save_model
+from src.model.model import TransformerModel, save_model
+from train_evaluate import train, evaluate
 from src.model.model_utils import data_process, batchify, gen_tokenizer_and_vocab
 from src.settings import DIR_MODELS
 
