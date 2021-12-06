@@ -1,10 +1,12 @@
+import __init__  # For now, needed for all the relative imports
+
 import math
 import time
 
 import numpy as np
 import torch
 
-from model_utils import get_batch
+from src.model.model_utils import get_batch
 from settings import BPTT
 
 

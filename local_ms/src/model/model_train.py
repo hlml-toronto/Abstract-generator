@@ -8,8 +8,9 @@ import torch.nn as nn
 import torch
 from torchtext.datasets import WikiText2
 
-from src.model.model import TransformerModel, save_model
-from train_evaluate import train, evaluate
+# need all class definitions for un-pickle
+from src.model.transformer_torch import TransformerModel, PositionalEncoding, load_model
+from src.model.train_evaluate import train, evaluate
 from src.model.model_utils import data_process, batchify, gen_tokenizer_and_vocab
 from src.settings import DIR_MODELS
 
