@@ -9,7 +9,8 @@ import torch
 from torchtext.datasets import WikiText2
 
 from src.model.model import TransformerModel, PositionalEncoding  # need all class definitions for un-pickle
-from src.model.model import load_model, evaluate
+from src.model.model import load_model
+from train_evaluate import evaluate
 from src.model.model_utils import gen_tokenizer_and_vocab, data_process, batchify
 from src.settings import DIR_MODELS, BPTT
 
