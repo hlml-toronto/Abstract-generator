@@ -64,7 +64,7 @@ class BaseDataset(Dataset):
                   tknzr_type='BPE',
                   vocab_size=None,
                   vocab=None,
-                  tknzr_fast=False,
+                  flag_tknzr_fast=False,
                   tknzr_custom_name=None,
                   special_tokens=SPECIAL_TOKEN_LIST):
 
@@ -84,13 +84,13 @@ class BaseDataset(Dataset):
 
         if flag_train:  # training given the specific characteristics asked for
             tokenizer = utils.train_custom_tokenizer(
-                self, tknzr_type, tknzr_path, vocab_size, vocab, tknzr_fast,
+                self, tknzr_type, tknzr_path, vocab_size, vocab, flag_tknzr_fast,
                 max_input_chars_per_word=None, **special_tokens)
         else:  # load from the custom name or default for the dataset chosen
             assert Path(tknzr_path).exists(), '''tokenizer does not exist, check
                                                 file name. Can always choose
                                                 flag_train=True to train your own'''
-            tokenizer = utils.load_tokenizer(tknzr_path, tknzr_fast, special_tokens)
+            tokenizer = utils.load_tokenizer(tknzr_path, flag_tknzr_fast, special_tokens)
 
         self.vocab_size = tokenizer.vocab_size
         self.set_transform(tokenizer)
