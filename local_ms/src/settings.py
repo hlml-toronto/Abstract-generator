@@ -20,3 +20,10 @@ BPTT = 35  # constant used by model.py and training notebook (acts as a max toke
 for core_dir in [DIR_DATA, DIR_TOKENIZERS, DIR_MODELS]:
     if not os.path.exists(core_dir):
         os.mkdir(core_dir)
+
+SPECIAL_TOKEN_LIST = {
+    'bos_token': "<s>",
+    'eos_token': "<\s>",
+    'unk_token': "<unk>",
+    'pad_token': "<pad>",
+    'mask_token': "<mask>"}
