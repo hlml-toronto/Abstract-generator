@@ -204,6 +204,7 @@ def train_custom_tokenizer(dataset, token_model, tknzr_file,
 
 def load_tokenizer(tknzr_file, flag_tknzr_fast, eos_token=None, bos_token=None,
                    pad_token=None, mask_token=None, unk_token=None):
+    # TODO why are some args unused?
     """
     Interestingly, HuggingFace does not allow the base tokenizer to be called.
     This is a bizarre choice, but accordingly we have to look for something else
