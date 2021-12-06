@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 from zipfile import ZipFile
 
 import src.data.dataset_utils_alt as utils
-from src.settings import DIR_DATA, DIR_TOKENIZERS, SPECIAL_TOKEN_LIST
+from src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_TOKENIZATIONS, SPECIAL_TOKEN_LIST
 
 
 class BaseDataset(Dataset):
@@ -23,7 +23,7 @@ class BaseDataset(Dataset):
         self.category = 'base'
         self.name = ''
         self.data = []
-        self.vocabSize = None
+        self.vocab_size = None
         self.transform = transform
 
         if self.transform is None:
@@ -60,8 +60,8 @@ class BaseDataset(Dataset):
         #  return instance['input_ids'][0]
         return instance[0]
 
-    def tokenizer(self, train,
-                  tknzr_type=True,
+    def tokenizer(self, flag_train,
+                  tknzr_type='BPE',
                   vocab_size=None,
                   vocab=None,
                   tknzr_fast=False,
@@ -71,6 +71,7 @@ class BaseDataset(Dataset):
         # make token dir
         Path(DIR_TOKENIZERS).mkdir(parents=True, exist_ok=True)
 
+        assert tknzr_type in VALID_TOKENIZATIONS
         if tknzr_custom_name is None:
             if self.name == '':
                 name_file = f'{tknzr_type}_{self.category}.json'
@@ -81,18 +82,17 @@ class BaseDataset(Dataset):
         else:  # if a custom name was given, use that.
             tknzr_path = str(PurePath(DIR_TOKENIZERS, f'{tknzr_custom_name}'))
 
-        if train:  # training given the specific characteristics asked for
+        if flag_train:  # training given the specific characteristics asked for
             tokenizer = utils.train_custom_tokenizer(
                 self, tknzr_type, tknzr_path, vocab_size, vocab, tknzr_fast,
                 max_input_chars_per_word=None, **special_tokens)
         else:  # load from the custom name or default for the dataset chosen
             assert Path(tknzr_path).exists(), '''tokenizer does not exist, check
                                                 file name. Can always choose
-                                                train=True to train your own'''
-            tokenizer = utils.load_tokenizer(tknzr_path, tknzr_fast,
-                                             special_tokens)
+                                                flag_train=True to train your own'''
+            tokenizer = utils.load_tokenizer(tknzr_path, tknzr_fast, special_tokens)
 
-        self.vocabSize = tokenizer.vocab_size
+        self.vocab_size = tokenizer.vocab_size
         self.set_transform(tokenizer)
 
         return tokenizer
