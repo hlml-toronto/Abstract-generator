@@ -97,7 +97,7 @@ def pad_tensor(vec, pad_size, dim, pad):
         a new tensor padded to 'pad' in dimension 'dim'
     """
     pad_size = list(vec.shape)
-    pad_size[dim] = pad_size - vec.size(dim)
+    pad_size[dim] = pad_size - vec.size(dim)  # TODO we can't subtract on a list?
     return torch.cat([vec, pad * torch.ones(*pad_size)], dim=dim)
 
 
@@ -126,14 +126,13 @@ class PadCollate:
             ys : a LongTensor of all labels in batch
         """
         # find longest sequence
-        max_len_seq = np.max( [ x.shape[self.dim] for x in batch ] )
-        max_len = np.min( [max_len_seq, self.maxLen] )
+        max_len_seq = np.max([x.shape[self.dim] for x in batch])
+        max_len = np.min([max_len_seq, self.maxLen])
 
         # pad according to max_len
-        batch = [pad_tensor(x[:max_len], pad_size=max_len, pad=self.padValue
-                            , dim=self.dim) for x in batch ]
+        batch = [pad_tensor(x[:max_len], pad_size=max_len, pad=self.padValue, dim=self.dim) for x in batch]
         # stack all
-        data = torch.stack([x[:-1] for x in batch], dim=1) # change to dim = 0 for annotated transformer?
+        data = torch.stack([x[:-1] for x in batch], dim=1)  # TODO [jeremy] change to dim = 0 for annotated transformer?
         target = torch.stack([x[1:] for x in batch], dim=1)
         #ys = torch.LongTensor(map(lambda x: x[1], batch))
         return [data.long(), target.long()]
@@ -168,14 +167,13 @@ class PadCollateMemoryOnGPU:
         """
         # find longest sequence
         print(batch[0])
-        max_len_seq = np.max( [ x.shape[self.dim] for x in batch ] )
-        max_len = np.min( [max_len_seq, self.maxLen] )
+        max_len_seq = np.max([x.shape[self.dim] for x in batch])
+        max_len = np.min([max_len_seq, self.maxLen])
 
         # pad according to max_len
-        batch = [pad_tensor(x[:max_len], pad_size=max_len, pad=self.padValue
-                            , dim=self.dim) for x in batch ]
+        batch = [pad_tensor(x[:max_len], pad_size=max_len, pad=self.padValue, dim=self.dim) for x in batch]
         # stack all
-        data = torch.stack([x[:-1] for x in batch], dim=1) # change to dim = 0 for annotated transformer?
+        data = torch.stack([x[:-1] for x in batch], dim=1)  # TODO [jeremy] change to dim = 0 for annotated transformer?
         target = torch.stack([x[1:] for x in batch], dim=1)
         #ys = torch.LongTensor(map(lambda x: x[1], batch))
         return [data.long(), target.long()]
@@ -221,11 +219,11 @@ class TransformerModel(nn.Module):
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-initrange, initrange)
 
-    def forward(self, src, src_mask, src_key_padding_mask=None): # should I add a padding mask here?
+    def forward(self, src, src_mask, src_key_padding_mask=None):  # TODO [jeremy] should I add a padding mask here?
         src = self.encoder(src) * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, src_mask)
-        # TODO: jeremy line below -- as it is, transformer_encoder only has two arguments...
+        # TODO: [jeremy] line below -- as it is, transformer_encoder only has two arguments...
         #  output = self.transformer_encoder(src, src_mask, src_key_padding_mask)
         output = self.decoder(output)
         return output
@@ -261,6 +259,7 @@ def save_model(model, fpath, as_pickle=True):
 
 def load_model(model_path, device, as_pickle=True, vocab=None):
     """
+    # TODO not as_pickle needs old torch vocab class before jeremy/matt code merge
     If not using as_pickle:
         TODO this is risky way to load -- what if they were trained differently? refactor
         Need to supply vocab class (for ntokens argument in model instantiation)
