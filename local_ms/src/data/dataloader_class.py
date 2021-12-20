@@ -10,18 +10,35 @@ class CustomBatch():
     at every call to dataloader or if it's instantiated along with dataloader.
     For now, all the tensors exist on CPU and are later pushed to the GPU. Needs
     potentially to be changed.
-    """
 
+    Note on dimensions (at least for transformer_torch.py expected usage)
+        - vec is a torch tensor representing a sequence of tokens
+        - it is generally 2-dimensional: e.g. 10 tokens, each token in integer ID space, then
+           vec.shape would be (1, 10) - for transformer_torch.py TODO confirm
+           vec.shape would be (10, 1) - for transformer_aiayn.py TODO confirm, and then standardize them to be same
+        - TODO - it may instead be a 10x1 or a 1x10 object where the "content" is the token integer ID
+
+    Common scenario:  TODO - compare this example with TODO above for torch model
+        - we have several sentences with different length in one "batch",
+           each token however has fixed dimension e.g. R^512
+        - example:
+            - sentence 1: (1, 10)
+            - sentence 2: (1, 7)
+            - sentence 3: (1, 14)
+        - this function is used to pad a given sentence -- vec -- to a given max length, e.g.
+            - padded sentence 2: (1, 14)
+    """
     def __init__(self, data, dim=0, pad_value=0, stack_dim=1, max_len_model=None):
         """
+        # TODO name changes and documentation
         Input:
-            data (dataset)      : a batch of dataset.
-            dim (int)           : the dimension to be padded (dimension of time
-                                    in sequences)
+            data (dataset)       : a batch of dataset.
+            dim_sentence (int)   : the dimension to be padded (dimension of time in sequences)
+                                    0 - huggingface, 1 - annotated transformer
             max_len_model (int)  : maximum length of sentence, if any
-            pad_value (int)      : the value for padding.
+            pad_value (int)      : value of padding token (0 is generally used as the pad value)
             stack_dim (int)      : dimension along which to stack the data tensor.
-                                     1 - huggingface, 0 - annotated transformer
+                                    1 - huggingface, 0 - annotated transformer
         """
         self.dim = dim
         self.padValue = pad_value
@@ -40,17 +57,18 @@ class CustomBatch():
 
     def pad_tensor(self, vec):
         """
-        Padding a tensors to the max length in the batch.
+        Padding a torch tensor 'vec' to the max length in the batch.
         Input:
-            vec : tensor to pad
+            vec : torch tensor which is to be padded to the size "pad_size_int"
         Output:
-            a new tensor padded to 'pad' in dimension 'dim'
+            a new tensor padded to 'pad_size_int' in dimension 'dim_sentence'
         """
         pad_size = list(vec.shape)
         pad_size[self.dim] = self.maxLen - vec.size(self.dim)
         return torch.cat([vec, self.padValue*torch.ones(*pad_size)], dim=self.dim)
 
     def pin_memory(self):
+        # Usage: potential code speedup; intended for GPU usage
         self.src = self.src.pin_memory()
         self.tgt = self.tgt.pin_memory()
         return self
