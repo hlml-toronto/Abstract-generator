@@ -23,8 +23,8 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # specify path to model or model_weights
-    #model_path_A = DIR_MODELS + os.sep + 'model_epoch20.pth'
-    #model_path_A = DIR_MODELS + os.sep + 'modelB_epoch50_batch128_adamW1e-4_bptt35' + os.sep + 'bestval_model.pth'
+    # model_path_A = DIR_MODELS + os.sep + 'model_epoch20.pth'
+    # model_path_A = DIR_MODELS + os.sep + 'modelB_epoch50_batch128_adamW1e-4_bptt35' + os.sep + 'bestval_model.pth'
     model_path_A = DIR_MODELS + os.sep + 'modelB_epoch50_batch128_adamW1e-4_bptt35' + os.sep + 'end_model.pth'
 
     # load dataset, tokenizer, vocab

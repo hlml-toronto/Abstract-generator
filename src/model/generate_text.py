@@ -52,14 +52,15 @@ def gen_some_text(model, tokenizer, vocab, device,
     # decoder hyperparameters
     np.random.seed(decode_seed)
 
-    #total_text_string = text_prompt  # this will be extended by tokens_to_gen
+    # total_text_string = text_prompt  # this will be extended by tokens_to_gen
     total_text_string = ''
 
     def process_prompt(dummy_token=0):
         # Two cases:
         # - if less than BPTT (context length), need to add dummy tokens
         # - if longer than BPTT (context length), truncate to BPTT
-        text_split, tokenized_text = tokenize_some_text(tokenizer, vocab, text=text_prompt)
+        text_split, tokenized_text = tokenize_some_text(tokenizer, vocab,
+                                                        text=text_prompt)
         nn = tokenized_text.shape[0]
 
         if verbose:
@@ -67,7 +68,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             print(nn)
 
         if nn > BPTT:  # take last BPTT elements
-            input_slice = tokenized_text[nn-BPTT:]
+            input_slice = tokenized_text[nn - BPTT:]
             src_mask = model.generate_square_subsequent_mask(BPTT).to(device)
         else:
             input_slice = tokenized_text[0:nn]
@@ -88,7 +89,7 @@ def gen_some_text(model, tokenizer, vocab, device,
         """
         assert style in ['greedy', 'sample_full', 'sample_topp']
         if style == 'greedy':
-            guessed_int = torch.argmax(model_out[nn-1, 0])  # care batch dimension, nn vs BPTT
+            guessed_int = torch.argmax(model_out[nn - 1, 0])  # care batch dimension, nn vs BPTT
         elif style == 'sample_full':
             """
             next_word_weights = out[nn-1, 0].detach().numpy()
@@ -109,7 +110,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             print()"""
 
             # numerically stable approach: gumbel max-trick sampling
-            next_word_weights = out[nn-1, 0].cpu().detach().numpy()
+            next_word_weights = out[nn - 1, 0].cpu().detach().numpy()
             ncategories = next_word_weights.shape[0]
             next_word_weights_scaled = decode_beta * next_word_weights
             if verbose:
@@ -121,7 +122,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             assert style == 'sample_topp'
             # TODO implement gumbel max trick here too
             print('TODO implement gumbel max trick for decode_style == sample_topp')
-            next_word_weights = out[nn-1, 0].cpu().detach().numpy()
+            next_word_weights = out[nn - 1, 0].cpu().detach().numpy()
             next_word_weights_exp = np.exp(decode_beta * next_word_weights)
             next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
             # 1) identify top p words such their cumulative probability passes threshold
@@ -164,21 +165,21 @@ def gen_some_text(model, tokenizer, vocab, device,
         if use_diff_mask:
             print('Warning: testing maskless generation')
             # A:
-            #src_mask = torch.zeros(nn, nn)
+            # src_mask = torch.zeros(nn, nn)
             # B:
             src_mask = torch.zeros(nn, nn) + float('-inf')
             src_mask[:, 0] = 0
             src_mask[-1, :] = 0
             # C:
-            #src_mask = torch.rand(nn, nn)
-            #print(src_mask)
+            # src_mask = torch.rand(nn, nn)
+            # print(src_mask)
             src_mask.to(device)
 
         out = model.forward(src, src_mask)
 
         if sidestep_unk:
             unk_index = vocab.unk_index
-            #print(out.size(), unk_index, vocan.itos[unk_index])
+            # print(out.size(), unk_index, vocan.itos[unk_index])
             MODEL_OUTPUT_MINIMAL = -1e9
             out[:, :, unk_index] = MODEL_OUTPUT_MINIMAL
 
@@ -186,7 +187,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             print(out.shape)
 
         if vis:
-            next_word_weights = out[nn-1, 0].detach().numpy()
+            next_word_weights = out[nn - 1, 0].detach().numpy()
             next_word_weights_exp = np.exp(next_word_weights)
             next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
 
@@ -194,14 +195,14 @@ def gen_some_text(model, tokenizer, vocab, device,
             plt.title('next_word_weights: iteration %d' % idx)
             plt.xlabel('vocab index')
             plt.ylabel('weight')
-            #plt.xlim((-0.5,100.5))
+            # plt.xlim((-0.5,100.5))
             plt.show()
 
             plt.plot(next_word_probs)
             plt.title('next_word_probs: iteration %d' % idx)
             plt.xlabel('vocab index')
             plt.ylabel('probability')
-            #plt.xlim((-0.5,100.5))
+            # plt.xlim((-0.5,100.5))
             plt.show()
 
             kk = 20
@@ -227,7 +228,7 @@ def gen_some_text(model, tokenizer, vocab, device,
         # update src and src mask for next pass of model.forward()
         if nn < BPTT:
             # extend and shift the running window of input data
-            src_updated = torch.zeros((nn + 1,1), dtype=torch.long)  # extend src to nn
+            src_updated = torch.zeros((nn + 1, 1), dtype=torch.long)  # extend src to nn
             src_updated[0:nn, 0] = src[:, 0]
             src_updated[nn, 0] = next_guess_int
             src = src_updated.to(device)
@@ -236,7 +237,7 @@ def gen_some_text(model, tokenizer, vocab, device,
             nn += 1
         else:
             src_orig = src.clone()
-            src[0:BPTT-1, 0] = src_orig[1:, 0]
+            src[0:BPTT - 1, 0] = src_orig[1:, 0]
             src[-1, 0] = next_guess_int
 
     return total_text_string
@@ -253,7 +254,7 @@ if __name__ == '__main__':
     model_adam = DIR_MODELS + os.sep + adam_dir + os.sep + fname
     model_sgd = DIR_MODELS + os.sep + sgd_dir + os.sep + fname
 
-    #model_path = model_adam
+    # model_path = model_adam
     model_path = model_sgd
 
     # load dataset, tokenizer, vocab
@@ -267,17 +268,17 @@ if __name__ == '__main__':
     print('model_A info...\n', model_A)
 
     # Text generation example
-    #prompt = 'Text generation is easier than you think , however'
+    # prompt = 'Text generation is easier than you think , however'
     prompt = 'Text generation is easier than you think. More challenging , however , ' \
              'is training the underlying model to generate believable text. In fact,'
-    #prompt = 'The dog ran across the'
+    # prompt = 'The dog ran across the'
     ngen = 120
     decode_style = 'sample_full'  # sample_topp, sample_full, or greedy
     print("Text prompt:\n", prompt)
     print("Decode style:", decode_style)
     print("Number of tokens to generate:", ngen)
 
-    for decode_seed in range(0,4):
+    for decode_seed in range(0, 4):
         generated_text = gen_some_text(
             model_A, tokenizer, vocab, device,
             text_prompt=prompt,

@@ -48,11 +48,11 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
 
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
                   'lr {:2e} | ms/batch {:5.2f} | '
-                  'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, batch, len(train_data) // BPTT,
-                last_lr,
-                elapsed * 1000 / log_interval,
-                cur_loss, math.exp(cur_loss)))
+                  'loss {:5.2f} | ppl {:8.2f}'.format(epoch,
+                                                      batch, len(train_data) // BPTT,
+                                                      last_lr,
+                                                      elapsed * 1000 / log_interval,
+                                                      cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
     return loss_per_batch
@@ -80,11 +80,11 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
     if max_len is not None:
         src_mask = model.generate_square_subsequent_mask(max_len).to(device)
     for i, batch in enumerate(dataloader):
-        #print((batch.src).is_pinned())
+        # print((batch.src).is_pinned())
         src = (batch.src).to(device)
         tgt = (batch.tgt).to(device)
         src_pad_mask = (batch.src_pad_mask).to(device)
-        #tgt_pad_mask = (batch.tgt_pad_mask).to(device)
+        # tgt_pad_mask = (batch.tgt_pad_mask).to(device)
 
         optimizer.zero_grad()
         if src.size(0) != max_len:
@@ -103,11 +103,10 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
                   'lr {:02.2f} | ms/batch {:5.2f} | '
-                  'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, i, len(dataloader),
-                scheduler.get_last_lr()[0],
-                elapsed * 1000 / log_interval,
-                cur_loss, math.exp(cur_loss)))
+                  'loss {:5.2f} | ppl {:8.2f}'.format(epoch, i, len(dataloader),
+                                                      scheduler.get_last_lr()[0],
+                                                      elapsed * 1000 / log_interval,
+                                                      cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
     return None
