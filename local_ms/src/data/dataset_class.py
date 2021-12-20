@@ -105,11 +105,7 @@ class ArxivDataset(BaseDataset):
     This Dataset takes the Arxiv data, downloads into a '.csv' files. When
     called, returns a sample from a list of samples with data_field.
     """
-    def __init__(self,
-                 number_results=10 ** 4,
-                 search_query='all:electron',
-                 transform=None,
-                 data_field='summary'):
+    def __init__(self, number_results=10 ** 4, search_query='all:electron', transform=None, data_field='summary'):
         """
         Gets a list of arxiv paper metadata from a search_query. Downloads and
         saves into file if not already a file.
