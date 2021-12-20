@@ -1,7 +1,11 @@
 .idea/
 __pycache__/
 *-checkpoint.ipynb
+<<<<<<< HEAD
 local_jr/data/
+=======
+bumbleBERT/data/
+>>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 
 local_ms/.data/
 local_ms/saved/

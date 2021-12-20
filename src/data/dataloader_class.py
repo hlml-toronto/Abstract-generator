@@ -13,6 +13,7 @@ class CustomBatch():
 
     Note on dimensions (at least for transformer_torch.py expected usage)
         - vec is a torch tensor representing a sequence of tokens
+<<<<<<< HEAD
         - it is generally 2-dimensional: e.g. 10 tokens, each token in integer
             ID space, then:
                 -vec.shape would be (1, 10) - for transformer_torch.py TODO confirm
@@ -20,6 +21,12 @@ class CustomBatch():
                  and then standardize them to be same
         - TODO - it may instead be a 10x1 or a 1x10 object where the "content"
                 is the token integer ID
+=======
+        - it is generally 2-dimensional: e.g. 10 tokens, each token in integer ID space, then
+           vec.shape would be (1, 10) - for transformer_torch.py TODO confirm
+           vec.shape would be (10, 1) - for transformer_aiayn.py TODO confirm, and then standardize them to be same
+        - TODO - it may instead be a 10x1 or a 1x10 object where the "content" is the token integer ID
+>>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 
     Common scenario:  TODO - compare this example with TODO above for torch model
         - we have several sentences with different length in one "batch",
@@ -28,8 +35,12 @@ class CustomBatch():
             - sentence 1: (1, 10)
             - sentence 2: (1, 7)
             - sentence 3: (1, 14)
+<<<<<<< HEAD
         - this function is used to pad a given sentence -- vec -- to a given max
             length, e.g.
+=======
+        - this function is used to pad a given sentence -- vec -- to a given max length, e.g.
+>>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
             - padded sentence 2: (1, 14)
     """
     def __init__(self, data, dim=0, pad_value=0, stack_dim=1, max_len_model=None):
@@ -69,7 +80,11 @@ class CustomBatch():
         """
         pad_size = list(vec.shape)
         pad_size[self.dim] = self.maxLen - vec.size(self.dim)
+<<<<<<< HEAD
         return torch.cat([vec, self.padValue * torch.ones(*pad_size)], dim=self.dim)
+=======
+        return torch.cat([vec, self.padValue*torch.ones(*pad_size)], dim=self.dim)
+>>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 
     def pin_memory(self):
         # Usage: potential code speedup; intended for GPU usage
@@ -79,19 +94,31 @@ class CustomBatch():
 
 
 class CustomDataloader():
+<<<<<<< HEAD
     """
 
     """
+=======
+>>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
     def __init__(self, dataset, batch_size, max_len,
                  dim=0,
                  num_workers=2,
                  pin_memory=True,
                  split_train_test_val=(0.7, 0.2, 0.1)):
+<<<<<<< HEAD
         nbr_train = np.floor(split_train_test_val[0] * len(dataset))
         nbr_test = np.floor(split_train_test_val[1] * len(dataset))
         nbr_valid = len(dataset) - (nbr_train - nbr_test)
         split_train_test_val = [nbr_train, nbr_test, nbr_valid]
 
+=======
+
+        split_train_test_val = [np.floor(split_train_test_val[0] * len(dataset)),
+                                np.floor(split_train_test_val[1] * len(dataset)),
+                                len(dataset) - (np.floor(split_train_test_val[0] * len(dataset)) +
+                                                np.floor(split_train_test_val[1] * len(dataset)))
+                                ]
+>>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
         self.dataset_train, self.dataset_test, self.dataset_valid = \
             torch.utils.data.random_split(
                 dataset,

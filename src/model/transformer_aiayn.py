@@ -1,4 +1,8 @@
 import copy
+<<<<<<< HEAD
+=======
+import torch
+>>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 import torch.nn as nn
 
 from aiayn.attention import MultiHeadedAttention
