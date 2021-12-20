@@ -14,7 +14,7 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
     """
     scheduler: either an int/float (fixed learning rate) or a scheduler torch object
     """
-    model.train() # Turn on the train mode
+    model.train()  # set to: evaluation mode
     total_loss = 0.
     start_time = time.time()
     src_mask = model.generate_square_subsequent_mask(BPTT).to(device)
@@ -23,12 +23,12 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
     loss_per_batch = 0.0 * batch_indices  # record the training loss for each batch
 
     for batch, i in enumerate(batch_indices):
-        data, targets = get_batch(train_data, i)
+        src, tgt = get_batch(train_data, i)
         optimizer.zero_grad()
-        if data.size(0) != BPTT:
-            src_mask = model.generate_square_subsequent_mask(data.size(0)).to(device)
-        output = model(data, src_mask)
-        loss = criterion(output.view(-1, ntokens), targets)
+        if src.size(0) != BPTT:
+            src_mask = model.generate_square_subsequent_mask(src.size(0)).to(device)
+        output = model(src, src_mask)
+        loss = criterion(output.view(-1, ntokens), tgt)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
@@ -49,52 +49,52 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
                   'lr {:2e} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, batch, len(train_data) // BPTT, last_lr,
-                              elapsed * 1000 / log_interval,
+                epoch, batch, len(train_data) // BPTT,
+                last_lr,
+                elapsed * 1000 / log_interval,
                 cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
     return loss_per_batch
 
 
-def train_version_jeremy(model, dataLoader, device, vocabSize, epoch, optimizer_, scheduler_, criterion_, maxLen=None):
+def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer, scheduler, criterion, max_len=None):
     """
-    Training loop that takes batches from dataLoader and pushes them to device
-    to train. Will check if they're the same size of maxLen: if shorter, will
-    reduces to longest length in batch. then trains according to optimizer,
-    criterion and schedule.
+    Training loop that takes batches from dataloader and pushes them to device to train.
+    Will check if they're the same size of max_len: if shorter, will reduce to the longest length in the batch.
+    Then trains according to optimizer, criterion, and schedule.
 
     Input
         model (instance)        : model that is being trained
-        dataLoader (instance)   : dataloader that batches data into tensors
+        dataloader (instance)   : dataloader that batches data into tensors
         optimizer (instance)    : Not sure what type optimizers are
         criterion               :
         device (str)            : gpu or cpu
-        maxLen (int)            : maximum sentence length if not None
+        max_len (int)           : maximum sentence length if not None
     Output
         None
     """
-
-    model.train() # Turn on the train mode
+    model.train()  # set to: evaluation mode
     total_loss = 0.
     start_time = time.time()
-    if maxLen is not None:
-        src_mask = model.generate_square_subsequent_mask(maxLen).to(device)
-    for i, batch in enumerate(dataLoader):
+    if max_len is not None:
+        src_mask = model.generate_square_subsequent_mask(max_len).to(device)
+    for i, batch in enumerate(dataloader):
         #print((batch.src).is_pinned())
-        src = (batch.src).to(device); tgt = (batch.tgt).to(device)
+        src = (batch.src).to(device)
+        tgt = (batch.tgt).to(device)
         src_pad_mask = (batch.src_pad_mask).to(device)
         #tgt_pad_mask = (batch.tgt_pad_mask).to(device)
 
-        optimizer_.zero_grad()
-        if src.size(0) != maxLen:
+        optimizer.zero_grad()
+        if src.size(0) != max_len:
             src_mask = model.generate_square_subsequent_mask(src.size(0)).to(device)
 
         output = model(src, src_mask, src_pad_mask.T)
-        loss = criterion_(output.view(-1, vocabSize), tgt.reshape(-1))
+        loss = criterion(output.view(-1, vocab_size), tgt.reshape(-1))
         loss.backward()
         torch.torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
-        optimizer_.step()
+        optimizer.step()
 
         total_loss += loss.item()
         log_interval = 200
@@ -104,8 +104,8 @@ def train_version_jeremy(model, dataLoader, device, vocabSize, epoch, optimizer_
             print('| epoch {:3d} | {:5d}/{:5d} batches | '
                   'lr {:02.2f} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, i, len(dataLoader),
-                scheduler_.get_last_lr()[0],
+                epoch, i, len(dataloader),
+                scheduler.get_last_lr()[0],
                 elapsed * 1000 / log_interval,
                 cur_loss, math.exp(cur_loss)))
             total_loss = 0
@@ -114,47 +114,43 @@ def train_version_jeremy(model, dataLoader, device, vocabSize, epoch, optimizer_
 
 
 def evaluate(eval_model, data_source, device, ntokens, criterion):
-    """
-    Note: changed pytorch URL code to eval_model from model in a few lines
-    """
     eval_model.eval()  # set to: evaluation mode
     total_loss = 0.
     src_mask = eval_model.generate_square_subsequent_mask(BPTT).to(device)
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, BPTT):
-            data, targets = get_batch(data_source, i)
-            if data.size(0) != BPTT:
-                src_mask = eval_model.generate_square_subsequent_mask(data.size(0)).to(device)
-            output = eval_model(data, src_mask)
+            src, tgt = get_batch(data_source, i)
+            if src.size(0) != BPTT:
+                src_mask = eval_model.generate_square_subsequent_mask(src.size(0)).to(device)
+            output = eval_model(src, src_mask)
             output_flat = output.view(-1, ntokens)
-            total_loss += len(data) * criterion(output_flat, targets).item()
+            total_loss += len(src) * criterion(output_flat, tgt).item()
     return total_loss / (len(data_source) - 1)
 
 
-def evaluate_version_jeremy(eval_model, dataLoader, device, vocabSize, criterion_, maxLen, nbrSamples):
+def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterion, max_len, nbr_samples):
     """
     Takes a trained model, puts it in evaluation mode to see how well it
     performs on another set of data.
 
     Input
         eval_model (instance)   : model to be evaluated
-        maxLen (int)            : maximum length possible/trained on
-        dataLoader (instance)   : dataloader of the dataset that is evaluate on
-        nbrSamples (int)        : Supposed to be number of samples, not sure I need
+        max_len (int)           : maximum length possible/trained on
+        dataloader (instance)   : dataloader of the dataset that is used for evaluation
+        nbr_samples (int)       : Supposed to be number of samples [Jeremy note: not sure I need]
     Output
         loss of evaluated set
     """
-    eval_model.eval() # Turn on the evaluation mode
+    eval_model.eval()  # set to: evaluation mode
     total_loss = 0.
-    src_mask = eval_model.generate_square_subsequent_mask(maxLen).to(device)
+    src_mask = eval_model.generate_square_subsequent_mask(max_len).to(device)
     with torch.no_grad():
-        for batch in dataLoader:
-            src = (batch.src).to(device); tgt = (batch.tgt).to(device)
-            if src.size(0) != maxLen:
-                src_mask = eval_model.generate_square_subsequent_mask(
-                    src.size(0)).to(device)
+        for batch in dataloader:
+            src = (batch.src).to(device)
+            tgt = (batch.tgt).to(device)
+            if src.size(0) != max_len:
+                src_mask = eval_model.generate_square_subsequent_mask(src.size(0)).to(device)
             output = eval_model(src, src_mask)
-            output_flat = output.view(-1, vocabSize)
-            total_loss += len(src) * criterion_(output_flat,
-                                                tgt.reshape(-1) ).item()
-    return total_loss / (nbrSamples - 1) # nbrSamples -x-> len(dataLoader)
+            output_flat = output.view(-1, vocab_size)
+            total_loss += len(src) * criterion(output_flat, tgt.reshape(-1)).item()
+    return total_loss / (nbr_samples - 1)  # nbrSamples -x-> len(dataloader)
