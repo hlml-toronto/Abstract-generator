@@ -7,7 +7,7 @@ from tokenizers.models import BPE, WordLevel
 from tokenizers.pre_tokenizers import Whitespace, ByteLevel
 from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 
-from src.data.data_sanitize import load_dataset
+from src.data._OLD_data_sanitize import load_dataset
 from src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_DATASETS, VALID_TOKENIZATIONS
 
 """
