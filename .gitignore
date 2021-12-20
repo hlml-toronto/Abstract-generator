@@ -4,11 +4,16 @@ __pycache__/
 bumbleBERT/data/
 
 local_ms/.data/
-local_ms/notebooks/.data/
-local_ms/notebooks/output/
-local_ms/notebooks/STORED_OUTPUT/
 local_ms/saved/
 local_ms/saved_models/
 local_ms/saved_tokenizers/
 local_ms/saved_data/wikitext-103/
 local_ms/src/model/.data/
+
+src/model/.data/
+notebooks/.data/
+notebooks/output/
+saved_tokenizers/
+saved_models/
+saved_data/wikitext-103/
+saved_data/wikitext-2/
