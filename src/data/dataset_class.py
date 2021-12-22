@@ -10,12 +10,8 @@ from torch.utils.data import Dataset
 from zipfile import ZipFile
 
 import src.data.dataset_utils_alt as utils
-<<<<<<< HEAD
 from src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_TOKENIZATIONS,\
     SPECIAL_TOKEN_LIST
-=======
-from src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_TOKENIZATIONS, SPECIAL_TOKEN_LIST
->>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 
 
 class BaseDataset(Dataset):
@@ -84,10 +80,6 @@ class BaseDataset(Dataset):
                 name_file = f'{tknzr_type}_{self.category}.json'
             else:
                 name_file = f'{tknzr_type}_{self.category}_{self.name}.json'
-<<<<<<< HEAD
-=======
-            
->>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
             tknzr_path = str(PurePath(DIR_TOKENIZERS, name_file))
         else:  # if a custom name was given, use that.
             tknzr_path = str(PurePath(DIR_TOKENIZERS, f'{tknzr_custom_name}'))
@@ -113,12 +105,8 @@ class ArxivDataset(BaseDataset):
     This Dataset takes the Arxiv data, downloads into a '.csv' files. When
     called, returns a sample from a list of samples with data_field.
     """
-<<<<<<< HEAD
     def __init__(self, number_results=10 ** 4, search_query='all:electron',
                  transform=None, data_field='summary'):
-=======
-    def __init__(self, number_results=10 ** 4, search_query='all:electron', transform=None, data_field='summary'):
->>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
         """
         Gets a list of arxiv paper metadata from a search_query. Downloads and
         saves into file if not already a file.
@@ -141,7 +129,6 @@ class ArxivDataset(BaseDataset):
 
         file_path = PurePath(arxiv_dir, f'{self.name}.csv')
         if not Path(file_path).exists():
-<<<<<<< HEAD
             utils.arxiv_api(file_path, max_results=number_results,
                             search_query=search_query)
 
@@ -150,14 +137,6 @@ class ArxivDataset(BaseDataset):
         # r'\s+|\\n' seems to be only one that works below
         remove_list = ['\r\n', '\n', '\ n', r'\\n', r'\n', r'\s+|\\n']
         self.data.replace(remove_list, ' ', regex=True, inplace=True)
-=======
-            utils.arxiv_api(file_path, max_results=number_results, search_query=search_query)
-
-        # make data, clean in a list
-        self.data = pd.read_csv(file_path)
-        remove_list = ['\r\n', '\n', '\ n', r'\\n', r'\n', r'\s+|\\n']      # r'\s+|\\n' seems to be
-        self.data.replace(remove_list, ' ', regex=True, inplace=True)       # only one that works
->>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 
     def get_instance_raw(self, idx):
         # returns some form of the text which will be our sample
@@ -186,15 +165,9 @@ class WikiTextDataset(BaseDataset):
 
         split = ['wiki.train', 'wiki.valid', 'wiki.test']
         if 'raw' in self.category:
-<<<<<<< HEAD
             split = [s + '.raw' for s in split]
         else:
             split = [s + '.raw' for s in split]
-=======
-            split = [s+'.raw' for s in split]
-        else:
-            split = [s+'.raw' for s in split]
->>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 
         # manipulate and make into list of samples
         for file in split:  # combine all train, test, valid text.
