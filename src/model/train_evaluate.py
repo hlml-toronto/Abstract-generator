@@ -79,6 +79,10 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
     start_time = time.time()
     if max_len is not None:
         src_mask = model.generate_square_subsequent_mask(max_len).to(device)
+
+    batch_indices = np.arange(0, len(dataloader))
+    loss_per_batch = 0.0 * batch_indices  # record the training loss for each batch
+
     for i, batch in enumerate(dataloader):
         # print((batch.src).is_pinned())
         src = (batch.src).to(device)
@@ -96,6 +100,7 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
         torch.torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
 
+        loss_per_batch[i] = loss  # TODO check if scaling is correct
         total_loss += loss.item()
         log_interval = 200
         if i % log_interval == 0 and i > 0:
@@ -109,7 +114,7 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
                                                       cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
-    return None
+    return loss_per_batch
 
 
 def evaluate(eval_model, data_source, device, ntokens, criterion):
