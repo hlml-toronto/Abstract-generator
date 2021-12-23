@@ -202,9 +202,11 @@ def gen_some_text(model, tokenizer, device, max_len_context,
 
 def gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt,
                           decode_style,
+                          max_len_context,
                           decode_seed=0,
                           decode_beta=1.0):
     generated_text = gen_some_text(generator_model, tokenizer, device,
+                                   max_len_context,
                                    text_prompt=text_prompt,
                                    tokens_to_gen=25,
                                    decode_style=decode_style,
@@ -216,6 +218,7 @@ def gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt,
 
 def decode_during_training(generator_model, tokenizer, device, epoch,
                            nongreedy_style,
+                           max_len_context,
                            text_prompt='The dog ran',
                            decode_seeds=[0, 1, 2],
                            decode_betas=[1.0, 1.0, 1.0]):
@@ -224,7 +227,7 @@ def decode_during_training(generator_model, tokenizer, device, epoch,
 
     print('Generated text at epoch %d: %s ...' % (epoch, text_prompt))
     # First get greedy decoding
-    greedy_text = gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt, 'greedy')
+    greedy_text = gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt, 'greedy', max_len_context)
     print("Greedy decoding:\n\t%s" % (greedy_text))
     # Now get several sampler decodings
     for idx in range(len(decode_seeds)):
@@ -232,6 +235,7 @@ def decode_during_training(generator_model, tokenizer, device, epoch,
                                                device,
                                                text_prompt,
                                                nongreedy_style,
+                                               max_len_context,
                                                decode_seed=decode_seeds[idx],
                                                decode_beta=decode_betas[idx])
         print("(%s, seed=%d, beta=%.2f):\n\t%s" % (nongreedy_style, decode_seeds[idx], decode_betas[idx], generated_text))
