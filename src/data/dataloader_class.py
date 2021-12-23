@@ -32,7 +32,8 @@ class CustomBatch():
             length, e.g.
             - padded sentence 2: (1, 14)
     """
-    def __init__(self, data, dim=0, pad_value=0, stack_dim=1, max_len_model=None):
+    def __init__(self, data, dim=0, pad_value=0, stack_dim=1,
+                 max_len_model=None, flag_padding_mask=True):
         """
         # TODO name changes and documentation
         Input:
@@ -55,7 +56,16 @@ class CustomBatch():
         # stack all, change to dim = 0 for annotated transformer?
         self.src = (torch.stack([x[:-1] for x in batch], dim=stack_dim)).long()
         self.tgt = (torch.stack([x[1:] for x in batch], dim=stack_dim)).long()
-        self.src_pad_mask = (self.src == self.padValue)
+        '''key_padding_mask: :math:(N, S) where N is the batch size, S is
+            the source sequence length. If provided, specified padding
+            elements in the key will be ignored by the attention. This is an
+            binary mask. When the value is True, the corresponding value on
+            the attention layer will be filled with -inf'''
+        if flag_padding_mask:
+            src_pad_mask = (self.src == self.padValue)
+            self.src_pad_mask = src_pad_mask.transpose(0, 1)
+        else:
+            self.src_pad_mask = None
         #  self.tgt_pad_mask = (self.tgt != self.pad_value).type(torch.int)
         #  ys = torch.LongTensor(map(lambda x: x[1], batch))
 
@@ -86,7 +96,8 @@ class CustomDataloader():
                  dim=0,
                  num_workers=2,
                  pin_memory=True,
-                 split_train_test_val=(0.7, 0.2, 0.1)):
+                 split_train_test_val=(0.7, 0.2, 0.1),
+                 flag_padding_mask=True):
         nbr_train = np.floor(split_train_test_val[0] * len(dataset))
         nbr_test = np.floor(split_train_test_val[1] * len(dataset))
         nbr_valid = len(dataset) - (nbr_train + nbr_test)
@@ -102,7 +113,8 @@ class CustomDataloader():
 
         def collate_wrapper(batch):
             return CustomBatch(batch, dim=dim, max_len_model=max_len,
-                               pad_value=tknzr.get_vocab()["<pad>"])
+                               pad_value=tknzr.get_vocab()["<pad>"],
+                               flag_padding_mask=flag_padding_mask)
 
         self.train = DataLoader(self.dataset_train, batch_size=batch_size,
                                 shuffle=True, num_workers=num_workers,

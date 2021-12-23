@@ -2,8 +2,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-# TODO : turn into a class that takes a model and will spit out different text
-#       depending on what method is called for.
+
 def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran across the', tokens_to_gen=10,
                   vis=False, decode_style='greedy'):
     """
@@ -26,7 +25,7 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
             1) Split by spaces into word tokens
             2) Use vocab to creat integer rep of each token
         """
-        tokenized_text_ints = torch.tensor( tokenizer(text)['input_ids'][:-1], dtype=torch.long)
+        tokenized_text_ints = torch.tensor(tokenizer(text)['input_ids'][:-1], dtype=torch.long)
         return tokenized_text_ints
 
     def process_prompt(dummy_token=0):
@@ -37,7 +36,7 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
         nn = tokenized_text.shape[0]
 
         if nn > maxLen:  # take last maxLen elements
-            input_slice = tokenized_text[nn-maxLen:]
+            input_slice = tokenized_text[nn - maxLen:]
             src_mask = model.generate_square_subsequent_mask(maxLen).to(device)
         else:
             input_slice = tokenized_text[0:nn]
@@ -60,7 +59,7 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
         """
         assert style in ['greedy', 'sample_full', 'sample_topp']
         if style == 'greedy':
-            guessed_int = torch.argmax(model_out[nn-1, 0])  # care batch dimension, nn vs maxLen
+            guessed_int = torch.argmax(model_out[nn - 1, 0])  # care batch dimension, nn vs maxLen
         elif style == 'sample_full':
             """
             next_word_weights = out[nn-1, 0].detach().numpy()
@@ -81,17 +80,17 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
             print()"""
 
             # numerically stable approach: gumbel max-trick sampling
-            next_word_weights = out[nn-1, 0].detach().numpy()
+            next_word_weights = out[nn - 1, 0].detach().numpy()
             ncategories = next_word_weights.shape[0]
             next_word_weights_scaled = DECODE_SAMPLE_BETA * next_word_weights
-            #print("ncategories", ncategories)
+            # print("ncategories", ncategories)
             uvec = np.random.rand(ncategories)
             gvec = -np.log(-np.log(uvec))
             guessed_int = np.argmax(gvec + next_word_weights_scaled)
         else:
             assert style == 'sample_topp'
             # TODO implement gumbel max trick here too
-            next_word_weights = out[nn-1, 0].detach().numpy()
+            next_word_weights = out[nn - 1, 0].detach().numpy()
             next_word_weights_exp = np.exp(DECODE_SAMPLE_BETA * next_word_weights)
             next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
             # 1) identify top p words such their cumulative probability passes threshold
@@ -102,16 +101,16 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
                                               DECODE_SAMPLE_TOPP_THRESHOLD)
             # 2) sample from these top p words
             topp_indices = distribution_sorted_indices[:threshold_index + 1]
-            #print(distribution_sorted_indices)
-            #print(next_word_probs_descsort_cumsum)
-            #print("topp_indices", len(topp_indices), topp_indices)
+            # print(distribution_sorted_indices)
+            # print(next_word_probs_descsort_cumsum)
+            # print("topp_indices", len(topp_indices), topp_indices)
             topp_probs = next_word_probs_descsort[:threshold_index + 1]
             topp_reweighted_probs = topp_probs / np.sum(topp_probs)
             topp_reweighted_cumsum = np.cumsum(topp_reweighted_probs)
             unirand = np.random.rand()
             topp_choice = np.searchsorted(topp_reweighted_cumsum, unirand)
             guessed_int = topp_indices[topp_choice]
-        #print(model_out[nn-1,0])
+        # print(model_out[nn - 1, 0])
         return guessed_int
 
     # 1) tokenize the text prompt and prepare associated src_mask for model.forward()
@@ -129,17 +128,18 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
         if use_diff_mask:
             print('Warning: testing maskless generation')
             # A:
-            #src_mask = torch.zeros(nn, nn)
+            # src_mask = torch.zeros(nn, nn)
             # B:
             src_mask = torch.zeros(nn, nn) + float('-inf')
             src_mask[:, 0] = 0
             src_mask[-1, :] = 0
             # C:
-            #src_mask = torch.rand(nn, nn)
-            #print(src_mask)
+            # src_mask = torch.rand(nn, nn)
+            # print(src_mask)
 
+        # TODO : add src_key_padding_mask to the forward call
         out = model.forward(src, src_mask)
-        #print(out.shape)
+        # print(out.shape)
 
         if vis:
             next_word_weights = out[nn-1, 0].detach().numpy()
@@ -150,14 +150,14 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
             plt.title('next_word_weights: iteration %d' % idx)
             plt.xlabel('vocab index')
             plt.ylabel('weight')
-            #plt.xlim((-0.5,100.5))
+            # plt.xlim((-0.5,100.5))
             plt.show()
 
             plt.plot(next_word_probs)
             plt.title('next_word_probs: iteration %d' % idx)
             plt.xlabel('vocab index')
             plt.ylabel('weight')
-            #plt.xlim((-0.5,100.5))
+            # plt.xlim((-0.5,100.5))
             plt.show()
 
             kk = 20
@@ -183,7 +183,7 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
         # update src and src mask for next pass of model.forward()
         if nn < maxLen:
             # extend and shift the running window of input data
-            src_updated = torch.zeros((nn + 1,1), dtype=torch.long)  # extend src to nn
+            src_updated = torch.zeros((nn + 1, 1), dtype=torch.long)  # extend src to nn
             src_updated[0:nn, 0] = src[:, 0]
             src_updated[nn, 0] = next_guess_int
             src = src_updated.to(device)
@@ -192,7 +192,7 @@ def gen_some_text(model, tokenizer, device, maxLen, text_prompt='The dog ran acr
             nn += 1
         else:
             src_orig = src.clone()
-            src[0:maxLen-1, 0] = src_orig[1:, 0]
+            src[0:maxLen - 1, 0] = src_orig[1:, 0]
             src[-1, 0] = next_guess_int
 
     return total_text_string

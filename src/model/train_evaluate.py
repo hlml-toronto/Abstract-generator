@@ -90,7 +90,7 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
         if src.size(0) != max_len:
             src_mask = model.generate_square_subsequent_mask(src.size(0)).to(device)
 
-        output = model(src, src_mask, src_pad_mask.T)
+        output = model(src, src_mask, src_key_padding_mask=src_pad_mask)
         loss = criterion(output.view(-1, vocab_size), tgt.reshape(-1))
         loss.backward()
         torch.torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
@@ -127,7 +127,7 @@ def evaluate(eval_model, data_source, device, ntokens, criterion):
     return total_loss / (len(data_source) - 1)
 
 
-def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterion, max_len, nbr_samples):
+def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterion, max_len):
     """
     Takes a trained model, puts it in evaluation mode to see how well it
     performs on another set of data.
@@ -142,14 +142,17 @@ def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterio
     """
     eval_model.eval()  # set to: evaluation mode
     total_loss = 0.
+    total_len = 0.
     src_mask = eval_model.generate_square_subsequent_mask(max_len).to(device)
     with torch.no_grad():
         for batch in dataloader:
-            src = (batch.src).to(device)
+            src = (batch.src).to(device)  # dim(src) = sentence_len x nbr_samples
             tgt = (batch.tgt).to(device)
+            src_pad_mask = (batch.src_pad_mask).to(device)
             if src.size(0) != max_len:
                 src_mask = eval_model.generate_square_subsequent_mask(src.size(0)).to(device)
-            output = eval_model(src, src_mask)
+            output = eval_model(src, src_mask, src_key_padding_mask=src_pad_mask)
             output_flat = output.view(-1, vocab_size)
-            total_loss += len(src) * criterion(output_flat, tgt.reshape(-1)).item()
-    return total_loss / (nbr_samples - 1)  # nbrSamples -x-> len(dataloader)
+            total_loss += src.size(0) * criterion(output_flat, tgt.reshape(-1)).item()
+            total_len += src.size(0)
+    return total_loss / (total_len - 1)  # TODO : why -1 ?

@@ -120,11 +120,16 @@ class TransformerModel(nn.Module):
         self.decoder.weight.data.uniform_(-initrange, initrange)
 
     def forward(self, src, src_mask, src_key_padding_mask=None):
+        """
+        src_mask : subsequent mask.
+        src_key_padding_mask : mask for pad elements in the data. This means that
+                                during training, pads not taking into account in
+                                loss calculation.
+        """
         src = self.encoder(src) * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
-        output = self.transformer_encoder(src, src_mask)
-        # TODO: [jeremy] line below -- as it is, transformer_encoder only has two arguments...
-        #  output = self.transformer_encoder(src, src_mask, src_key_padding_mask)
+        output = self.transformer_encoder(src, mask=src_mask,
+                                          src_key_padding_mask=src_key_padding_mask)
         output = self.decoder(output)
         return output
 
