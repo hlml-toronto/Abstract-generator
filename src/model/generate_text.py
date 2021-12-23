@@ -10,7 +10,6 @@ from torchtext.datasets import WikiText2
 
 # need all class definitions for un-pickle
 from src.model.transformer_torch import TransformerModel, PositionalEncoding, load_model
-from src.model.model_utils import gen_tokenizer_and_vocab, data_process, batchify
 from src.settings import DIR_MODELS, BPTT
 
 
@@ -259,6 +258,10 @@ if __name__ == '__main__':
     # model_path = model_adam
     model_path = model_sgd
 
+    # TODO reimplement with new tokenizers -- see latest training notebook
+    """
+    from src.model.model_utils import gen_tokenizer_and_vocab, data_process, batchify
+    
     # load dataset, tokenizer, vocab
     tokenizer, vocab = gen_tokenizer_and_vocab()
     train_iter, val_iter, test_iter = WikiText2()
@@ -292,3 +295,4 @@ if __name__ == '__main__':
             vis=False,
             verbose=False)
         print("(seed=%d) Generated_text:\n%s" % (decode_seed, generated_text))
+    """
