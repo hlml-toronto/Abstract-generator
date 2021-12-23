@@ -260,7 +260,7 @@ if __name__ == '__main__':
 
     # TODO reimplement with new tokenizers -- see latest training notebook
     """
-    from src.model.model_utils import gen_tokenizer_and_vocab, data_process, batchify
+    from src.model._OLD_model_utils import gen_tokenizer_and_vocab, data_process, batchify
     
     # load dataset, tokenizer, vocab
     tokenizer, vocab = gen_tokenizer_and_vocab()

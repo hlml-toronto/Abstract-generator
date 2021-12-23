@@ -6,7 +6,7 @@ import time
 import numpy as np
 import torch
 
-from src.model.model_utils import get_batch
+from src.model._OLD_model_utils import get_batch  # TODO remove need for this import in train()
 from src.settings import BPTT
 
 
