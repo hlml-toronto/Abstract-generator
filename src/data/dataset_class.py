@@ -9,7 +9,7 @@ from pathlib import Path, PurePath
 from torch.utils.data import Dataset
 from zipfile import ZipFile
 
-import src.data.dataset_utils_alt as utils
+import src.data.dataset_utils as utils
 from src.settings import DIR_DATA, DIR_TOKENIZERS, VALID_TOKENIZATIONS,\
     SPECIAL_TOKEN_LIST
 

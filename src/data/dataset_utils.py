@@ -29,19 +29,12 @@ def arxiv_api(file_path, max_results=11, search_query='all:electron'):
     # This is a hack to expose both of these namespaces in
     # feedparser v4.1
     # Python 3.8.7 Windows: need to comment out the following two lines
-<<<<<<< HEAD
+
     # feedparser._FeedParserMixin.namespaces['http://a9.com/-/spec/opensearch/1.1/'] = 'opensearch'
     # feedparser._FeedParserMixin.namespaces['http://arxiv.org/schemas/atom'] = 'arxiv'
 
     # perform a GET request using the base_url and query
     response = urllib.request.urlopen(base_url + query).read()
-=======
-    #feedparser._FeedParserMixin.namespaces['http://a9.com/-/spec/opensearch/1.1/'] = 'opensearch'
-    #feedparser._FeedParserMixin.namespaces['http://arxiv.org/schemas/atom'] = 'arxiv'
-
-    # perform a GET request using the base_url and query
-    response = urllib.request.urlopen(base_url+query).read()
->>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
 
     # parse the response using feedparser
     feed = feedparser.parse(response)
@@ -173,11 +166,7 @@ def train_custom_tokenizer(dataset, token_model, tknzr_file,
 
     # Set the post-processing
     tokenizer.post_processor = processors.TemplateProcessing(
-<<<<<<< HEAD
         single=bos_token + " $A " + eos_token,
-=======
-        single=bos_token+" $A "+eos_token,
->>>>>>> 4bd1e1c73627c72dfc1c199652f0c89dc65325e5
         special_tokens=[(bos_token, bos_idx),
                         (eos_token, eos_idx)],
         #  pair=bos_token+" $A "+eos_token" $B:1 "+eos_token+":1",
