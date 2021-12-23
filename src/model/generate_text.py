@@ -230,10 +230,10 @@ def decode_during_training(generator_model, tokenizer, device, epoch,
     for idx in range(len(decode_seeds)):
         generated_text = gen_some_text_wrapper(generator_model, tokenizer,
                                                device,
-                                               text_prompt,
-                                               nongreedy_style,
-                                               decode_seeds[idx],
-                                               decode_betas[idx])
+                                               text_prompt=text_prompt,
+                                               decode_style=nongreedy_style,
+                                               decode_seed=decode_seeds[idx],
+                                               decode_beta=decode_betas[idx])
         print("(%s, seed=%d, beta=%.2f):\n\t%s" % (nongreedy_style, decode_seeds[idx], decode_betas[idx], generated_text))
     print('-' * 89)
     print('Epoch {:3d} | example generation time: {:5.2f}s'.format(epoch, (time.time() - decode_start_time)))
