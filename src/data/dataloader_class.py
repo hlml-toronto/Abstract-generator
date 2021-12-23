@@ -89,7 +89,7 @@ class CustomDataloader():
                  split_train_test_val=(0.7, 0.2, 0.1)):
         nbr_train = np.floor(split_train_test_val[0] * len(dataset))
         nbr_test = np.floor(split_train_test_val[1] * len(dataset))
-        nbr_valid = len(dataset) - (nbr_train - nbr_test)
+        nbr_valid = len(dataset) - (nbr_train + nbr_test)
         split_train_test_val = [nbr_train, nbr_test, nbr_valid]
         self.dataset_train, self.dataset_test, self.dataset_valid = \
             torch.utils.data.random_split(
