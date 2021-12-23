@@ -224,14 +224,14 @@ def decode_during_training(generator_model, tokenizer, device, epoch,
 
     print('Generated text at epoch %d: %s ...' % (epoch, text_prompt))
     # First get greedy decoding
-    greedy_text = gen_some_text_wrapper(generator_model, 'greedy')
+    greedy_text = gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt, 'greedy')
     print("Greedy decoding:\n\t%s" % (greedy_text))
     # Now get several sampler decodings
     for idx in range(len(decode_seeds)):
         generated_text = gen_some_text_wrapper(generator_model, tokenizer,
                                                device,
-                                               text_prompt=text_prompt,
-                                               decode_style=nongreedy_style,
+                                               text_prompt,
+                                               nongreedy_style,
                                                decode_seed=decode_seeds[idx],
                                                decode_beta=decode_betas[idx])
         print("(%s, seed=%d, beta=%.2f):\n\t%s" % (nongreedy_style, decode_seeds[idx], decode_betas[idx], generated_text))
