@@ -28,7 +28,8 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         """
         Uses tokenizer trained in Dataloader to decode text.
         """
-        tokenized_text_ints = torch.tensor(tokenizer(text)['input_ids'][:-1], dtype=torch.long)
+        tokenized_text_ints = torch.tensor(
+            tokenizer(text)['input_ids'][:-1], dtype=torch.long)
         return tokenized_text_ints
 
     def process_prompt(dummy_token=0):
@@ -40,12 +41,14 @@ def gen_some_text(model, tokenizer, device, max_len_context,
 
         if nn > max_len_context:  # take last max_len_context elements
             input_slice = tokenized_text[nn - max_len_context:]
-            src_mask = model.generate_square_subsequent_mask(max_len_context).to(device)
+            src_mask = model.generate_square_subsequent_mask(
+                max_len_context).to(device)
         else:
             input_slice = tokenized_text[0:nn]
             src_mask = model.generate_square_subsequent_mask(nn).to(device)
 
-        src = torch.zeros((min(nn, max_len_context), 1), dtype=torch.long).to(device)
+        src = torch.zeros((min(nn, max_len_context), 1),
+                          dtype=torch.long).to(device)
         src[0:nn, 0] = input_slice
 
         return src, src_mask
@@ -61,7 +64,8 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         """
         assert style in ['greedy', 'sample_full', 'sample_topp']
         if style == 'greedy':
-            guessed_int = torch.argmax(model_out[nn - 1, 0])  # care batch dimension, nn vs max_len_context
+            # care batch dimension, nn vs max_len_context
+            guessed_int = torch.argmax(model_out[nn - 1, 0])
         elif style == 'sample_full':
             """
             next_word_weights = out[nn-1, 0].detach().numpy()
@@ -82,7 +86,7 @@ def gen_some_text(model, tokenizer, device, max_len_context,
             print()"""
 
             # numerically stable approach: gumbel max-trick sampling
-            next_word_weights = out[nn - 1, 0].detach().numpy()
+            next_word_weights = model_out[nn - 1, 0].cpu().detach().numpy()
             ncategories = next_word_weights.shape[0]
             next_word_weights_scaled = decode_beta * next_word_weights
             # print("ncategories", ncategories)
@@ -92,13 +96,15 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         else:
             assert style == 'sample_topp'
             # TODO implement gumbel max trick here too
-            next_word_weights = out[nn - 1, 0].detach().numpy()
+            next_word_weights = model_out[nn - 1, 0].cpu().detach().numpy()
             next_word_weights_exp = np.exp(decode_beta * next_word_weights)
-            next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
+            next_word_probs = next_word_weights_exp / \
+                np.sum(next_word_weights_exp)
             # 1) identify top p words such their cumulative probability passes threshold
             distribution_sorted_indices = np.argsort(next_word_probs)[::-1]
             next_word_probs_descsort = next_word_probs[distribution_sorted_indices]
-            next_word_probs_descsort_cumsum = np.cumsum(next_word_probs_descsort)
+            next_word_probs_descsort_cumsum = np.cumsum(
+                next_word_probs_descsort)
             threshold_index = np.searchsorted(next_word_probs_descsort_cumsum,
                                               decode_sample_topp_threshold)
             # 2) sample from these top p words
@@ -116,14 +122,16 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         return guessed_int
 
     # 1) tokenize the text prompt and prepare associated src_mask for model.forward()
-    src, src_mask = process_prompt(tokenizer.get_vocab()["<pad>"])  # src should be in form ntokens x nbatches
+    # src should be in form ntokens x nbatches
+    src, src_mask = process_prompt(tokenizer.get_vocab()["<pad>"])
     nn = src_mask.shape[0]
     src.reshape((nn, 1))
 
     # 2)
     model.eval()
     for idx in range(tokens_to_gen):
-        running_context_string = ' '.join([tokenizer.decode(src[k]) for k in range(src.shape[0])])
+        running_context_string = ' '.join(
+            [tokenizer.decode(src[k]) for k in range(src.shape[0])])
         # print(running_context_string)
         # TESTING DIFFERENT src_mask (all zero)
         use_diff_mask = False
@@ -146,7 +154,8 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         if vis:
             next_word_weights = out[nn - 1, 0].detach().numpy()
             next_word_weights_exp = np.exp(next_word_weights)
-            next_word_probs = next_word_weights_exp / np.sum(next_word_weights_exp)
+            next_word_probs = next_word_weights_exp / \
+                np.sum(next_word_weights_exp)
 
             plt.plot(next_word_weights)
             plt.title('next_word_weights: iteration %d' % idx)
@@ -167,8 +176,10 @@ def gen_some_text(model, tokenizer, device, max_len_context,
             top_word_probs = next_word_probs[top_word_indices]
             x = list(range(kk))
             plt.title('next_word_probs: iteration %d' % idx)
-            plt.suptitle(running_context_string + ' ???', fontsize=8, wrap=True)
-            plt.xticks(x, [tokenizer.decode(k) for k in top_word_indices[0:kk]], rotation=60)
+            plt.suptitle(running_context_string
+                         + ' ???', fontsize=8, wrap=True)
+            plt.xticks(x, [tokenizer.decode(k)
+                       for k in top_word_indices[0:kk]], rotation=60)
             plt.plot(x, top_word_probs[0:kk])
             plt.ylabel('probability')
             plt.show()
@@ -185,7 +196,8 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         # update src and src mask for next pass of model.forward()
         if nn < max_len_context:
             # extend and shift the running window of input data
-            src_updated = torch.zeros((nn + 1, 1), dtype=torch.long)  # extend src to nn
+            src_updated = torch.zeros(
+                (nn + 1, 1), dtype=torch.long)  # extend src to nn
             src_updated[0:nn, 0] = src[:, 0]
             src_updated[nn, 0] = next_guess_int
             src = src_updated.to(device)
@@ -227,7 +239,8 @@ def decode_during_training(generator_model, tokenizer, device, epoch,
 
     print('Generated text at epoch %d: %s ...' % (epoch, text_prompt))
     # First get greedy decoding
-    greedy_text = gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt, 'greedy', max_len_context)
+    greedy_text = gen_some_text_wrapper(
+        generator_model, tokenizer, device, text_prompt, 'greedy', max_len_context)
     print("Greedy decoding:\n\t%s" % (greedy_text))
     # Now get several sampler decodings
     for idx in range(len(decode_seeds)):
@@ -238,7 +251,9 @@ def decode_during_training(generator_model, tokenizer, device, epoch,
                                                max_len_context,
                                                decode_seed=decode_seeds[idx],
                                                decode_beta=decode_betas[idx])
-        print("(%s, seed=%d, beta=%.2f):\n\t%s" % (nongreedy_style, decode_seeds[idx], decode_betas[idx], generated_text))
+        print("(%s, seed=%d, beta=%.2f):\n\t%s" % (nongreedy_style,
+              decode_seeds[idx], decode_betas[idx], generated_text))
     print('-' * 89)
-    print('Epoch {:3d} | example generation time: {:5.2f}s'.format(epoch, (time.time() - decode_start_time)))
+    print('Epoch {:3d} | example generation time: {:5.2f}s'.format(
+        epoch, (time.time() - decode_start_time)))
     print('-' * 89)

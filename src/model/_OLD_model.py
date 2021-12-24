@@ -8,19 +8,19 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 See URL: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
 
 Code notes:
-1) PyTorch has data loader classes WikiText2 or WikiText103 (50x bigger) and a Vocab class 
+1) PyTorch has data loader classes WikiText2 or WikiText103 (50x bigger) and a Vocab class
     - Vocab class builds a word level dictionary, with each word having specific index int
-    - Data notes: 
+    - Data notes:
         - RAW: WikiText2 training data is a list of ~30,000 "lines" or "paragraphs" (600 articles)
-        - STEP 1: This is converted to stream of ~2 million tokens 
+        - STEP 1: This is converted to stream of ~2 million tokens
         - STEP 2: Divide into batched dataset with 2D shape - (2 million // nbatches, nbatches)
     - When the data is actually passed through the network, it is done in sweeps of length BPTT
-        - e.g. BPTT = 5, input could be: 'The dog ran across the', target is the next word.  
+        - e.g. BPTT = 5, input could be: 'The dog ran across the', target is the next word.
     - To make network input output pairs, "get_batch(batched_dataset, batch_idx)" is called
         - returns batch_input, batch_target
         - batch_input has form  (2D) X.shape = (bptt, nbatches), with elements being vocab integers
         - batch_target has form (1D) Y.shape = bptt * nbatches, with elements being vocab integers
-            - contains the next token for each input 'sentence' of length **up to** bptt 
+            - contains the next token for each input 'sentence' of length **up to** bptt
 
 - Example: Dataset = alphabet, 26 total tokens.
     - Params: (nbatches = 1), (bptt = 2)
@@ -34,23 +34,23 @@ Code notes:
     - Params: (nbatches = 2), (bptt = 4)
           - batched_dataset = [A, N,
                                B, O,  (as 13 x 2 tensor)
-                              ..., 
+                              ...,
                                M, Z]
           - get_batch(batched_dataset, 0) returns
             X = 4 x 2 tensor, Y = 8 1D tensor
             X = [A, N
                  B, O
                  C, P
-                 D, Q],  
+                 D, Q],
             Y_as_2D = [B, O
                        C, P
                        D, Q
                        E, R],
             Y_as_1D = [B, O, C, P, D, Q, E, R]  (using reshape(-1) as in their code).
- 
+
 2) Params to choose:
-    - "bptt" which sets the window length for input text 
-      (e.g. bptt = 7 then each window has 7 words, and we want to predict the 8th word) 
+    - "bptt" which sets the window length for input text
+      (e.g. bptt = 7 then each window has 7 words, and we want to predict the 8th word)
     - batch size (training and evaluation, can be different)
     - model:
         ntokens = len(vocab.stoi)  # the size of vocabulary
@@ -70,7 +70,7 @@ Code notes:
         [0   0  ... -inf]      [The dog ... ???]
         [0  ... ...  ...] ~~~~ [The dog ... ???]
         [0   0  ...   0 ]      [The dog ... street]
-    - When the input is a  2D tensor X = bptt x nbatch, 
+    - When the input is a  2D tensor X = bptt x nbatch,
            the output is a 3D tensor Z = bptt x nbatch x ntokens
     - The output represents the unnormalized probability of the next word given the input,
       for each element of the input tensor (properly masked using src_mask)
