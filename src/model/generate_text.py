@@ -45,9 +45,8 @@ def gen_some_text(model, tokenizer, device, max_len_context,
             input_slice = tokenized_text[0:nn]
             src_mask = model.generate_square_subsequent_mask(nn).to(device)
 
-        src = torch.zeros((min(nn, max_len_context), 1), dtype=torch.long)
+        src = torch.zeros((min(nn, max_len_context), 1), dtype=torch.long).to(device)
         src[0:nn, 0] = input_slice
-        src.to(device)
 
         return src, src_mask
 
@@ -139,6 +138,7 @@ def gen_some_text(model, tokenizer, device, max_len_context,
             # C:
             # src_mask = torch.rand(nn, nn)
             # print(src_mask)
+            src_mask.to(device)
 
         # TODO : add src_key_padding_mask to the forward call
         out = model.forward(src, src_mask)
