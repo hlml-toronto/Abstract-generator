@@ -119,7 +119,7 @@ class TransformerModel(nn.Module):
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-initrange, initrange)
 
-    def forward(self, src, src_mask, src_key_padding_mask=None):
+    def forward(self, src, mask):
         """
         src_mask : subsequent mask.
         src_key_padding_mask : mask for pad elements in the data. This means that
@@ -128,8 +128,8 @@ class TransformerModel(nn.Module):
         """
         src = self.encoder(src) * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
-        output = self.transformer_encoder(src, mask=src_mask,
-                                          src_key_padding_mask=src_key_padding_mask)
+        output = self.transformer_encoder(src, mask=mask[0],
+                                          src_key_padding_mask=mask[1])
         output = self.decoder(output)
         return output
 
@@ -183,3 +183,11 @@ def load_model(model_path, device, as_pickle=True, vocab=None):
         model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     return model
+
+
+def make_std_mask(batch, model, pad=0):
+    src_pad_mask = batch.src_pad_mask
+    src = batch.src
+    if src.size(0) != max_len:
+        src_mask = model.generate_square_subsequent_mask(src.size(0))
+    return [src_mask, src_pad_mask]
