@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as log_softmax, pad
 import math, copy
 
 class GPT(nn.Module):
@@ -25,7 +25,7 @@ class Generator(nn.Module):
 	def forward(self, x):
 		## applies projection from d_model space to vocab space
 		## applies softmax followed by logarithm along vocab direction (to generate probabilities of each word)
-		return F.log_softmax(self.proj(x), dim=-1)
+		return log_softmax(self.proj(x), dim=-1)
 
 
 
@@ -144,7 +144,7 @@ class PositionwiseFeedForward(nn.Module):
 		self.dropout = nn.Dropout(dropout)
 
 	def forward(self, x):
-		return self.w_2(self.dropout(F.relu(self.w_1(x))))
+		return self.w_2(self.dropout(self.w_1(x).relu()))
 
 
 class Embeddings(nn.Module):
@@ -168,7 +168,7 @@ class PositionalEncoding(nn.Module):
 		self.dropout = nn.Dropout(p=dropout)
 		
 		# Compute the positional encodings once in log space.
-		pe = torch.zeros(max_len, d_model, requires_grad=False) # size: [5000, 512]
+		pe = torch.zeros(max_len, d_model) # size: [5000, 512]
 		position = torch.arange(0, max_len).unsqueeze(1) # size: [5000, 1]
 		## not sure why this is implemented "in log space"
 		div_term = torch.exp(torch.arange(0, d_model, 2) *
@@ -187,14 +187,14 @@ class PositionalEncoding(nn.Module):
 
 		# x.shape is [30, 10, 512] or [30, 9, 512]
 		# pe added is [1, 10, 512] or [1, 9, 512]
-		x = x + self.pe[:, :x.size(1)] 
+		x = x + self.pe[:, :x.size(1)].requires_grad_(False) 
 		return self.dropout(x) # applies dropout (zeros some elements of x with prob=dropout)
 
 def subsequent_mask(size):
 	"""Mask out subsequent positions."""
 	attn_shape = (1, size, size)
-	subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('uint8')
-	return torch.from_numpy(subsequent_mask) == 0 # sets diagonal and below to True, above to False
+	subsequent_mask = torch.triu(torch.ones(attn_shape), diagonal=1).type(torch.uint8)
+	return subsequent_mask == 0 # sets diagonal and below to True, above to False
 
 def attention(query, key, value, mask=None, dropout=None):
 	"""Compute 'Scaled Dot Product Attention' (Equ 1)"""
@@ -204,7 +204,7 @@ def attention(query, key, value, mask=None, dropout=None):
 			 / math.sqrt(d_k)
 	if mask is not None:
 		scores = scores.masked_fill(mask == 0, -1e9) # sets masked scores to -inf
-	p_attn = F.softmax(scores, dim = -1) # computes softmax along last dimension
+	p_attn = scores.softmax(dim=-1) # computes softmax along last dimension
 	if dropout is not None:
 		p_attn = dropout(p_attn)
 	return torch.matmul(p_attn, value), p_attn
@@ -283,7 +283,7 @@ class LabelSmoothing(nn.Module):
 	# "Implement label smoothing."
 	def __init__(self, size, padding_idx, smoothing=0.0):
 		super(LabelSmoothing, self).__init__()
-		self.criterion = nn.KLDivLoss(size_average=False) # Kullback-Leibler divergence loss
+		self.criterion = nn.KLDivLoss(reduction="sum") # Kullback-Leibler divergence loss
 		self.padding_idx = padding_idx
 		self.confidence = 1.0 - smoothing
 		self.smoothing = smoothing
@@ -296,12 +296,12 @@ class LabelSmoothing(nn.Module):
 		true_dist.fill_(self.smoothing / (self.size - 2))
 		true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
 		true_dist[:, self.padding_idx] = 0
-		mask = torch.nonzero(target.data == self.padding_idx, as_tuple=False)
+		mask = torch.nonzero(target.data == self.padding_idx)
 		if mask.dim() > 0:
 			true_dist.index_fill_(0, mask.squeeze(), 0.0)
-		self.true_dist = true_dist.requires_grad_(False)
+		self.true_dist = true_dist
 
-		return self.criterion(x, true_dist)
+		return self.criterion(x, true_dist.clone().detach())
   
   
 
