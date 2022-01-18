@@ -5,6 +5,7 @@ import feedparser
 import numpy as np
 import urllib.request
 from pathlib import Path
+from sickle import Sickle
 
 # bunch of tokenizer options
 from transformers import PreTrainedTokenizerFast, PreTrainedTokenizer
@@ -15,6 +16,84 @@ from tokenizers.trainers import BpeTrainer, UnigramTrainer, WordPieceTrainer, Wo
 
 from src.settings import VALID_TOKENIZATIONS
 
+def arxiv_oai2(file_path,
+               max_retries=100,
+               search_set='physics:astro-ph',
+               start_date='2016-01-01',
+               end_date='2022-01-01',
+               metadata_style='arXiv',
+               max_entries=100000
+               ):
+    """
+    Downloads and stores data using arXiv bulk data download API based on
+    the OAI-PMH 2.0 standard.
+
+    Input
+        file_path (str)   : path to .csv file to store
+
+        max_retries (int) : How many retries to use. The API is limited to
+            roughly 1000 records per retry, and takes 5s between retries.
+
+        search_set (str)  : Which set in arXiv to search from. See
+            http://export.arxiv.org/oai2?verb=ListSets for a complete list.
+
+        start_date (str)  : Start date for datestamp search. Note the
+            following: The OAI-PMH interface does not support selective harvesting
+            based on submission date. The datestamps are designed to support
+            incremental harvesting of updates on an ongoing basis.
+            It is not possible to selectively harvest only, say, articles
+            submitted in February 2001 (identifiers 0102.xxxx).
+
+        end_date (str)    : End date for datestamp search.
+
+        metadata_style (str) :The style of metadata to access.  Should be
+            'arXiv' or 'oai_dc'.
+
+        max_entries (int) : max number of entries stored.
+
+    Output
+        file_path     : path to .csv file to store
+    """
+
+    base_url = 'http://export.arxiv.org/oai2'
+
+    search = Sickle(base_url, max_retries=max_retries)
+
+    if metadata_style == 'arXiv':
+        keys = ['id', 'created', 'updated', 'authors', 'author', 'keyname', 'forenames', 'title', 'categories', 'comments', 'journal-ref', 'doi', 'license', 'abstract', 'report-no', 'proxy', 'affiliation', 'suffix', 'msc-class', 'acm-class']
+    elif metadata_style == 'oai_dc':
+        keys = ['title', 'creator', 'subject', 'description', 'date', 'type', 'identifier', 'language']
+
+    records = search.ListRecords(
+                **{'metadataPrefix': metadata_style,
+                'from': start_date,
+                'until': end_date,
+                'ignore_deleted':True,
+                'set': search_set
+                })
+
+    counter = 0
+    record_list = []
+
+    for record in records:
+        if counter < max_entries:
+            metadata = record.metadata
+
+            for key in keys:
+                if key not in metadata.keys():
+                    metadata[key] = None
+
+            record_list.append(metadata)
+            counter += 1
+        else:
+            break
+
+    with open(file_path, 'w', newline='', encoding='utf-8') as csv_file:
+        dict_writer = csv.DictWriter(csv_file, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(record_list)
+
+    return file_path
 
 def arxiv_api(file_path, max_results=11, search_query='all:electron'):
 
