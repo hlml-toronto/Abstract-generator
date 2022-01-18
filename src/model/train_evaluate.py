@@ -87,14 +87,12 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
         # print((batch.src).is_pinned())
         src = (batch.src).to(device)
         tgt = (batch.tgt).to(device)
-        src_pad_mask = (batch.src_pad_mask).to(device)
+
+        mask = make_std_mask(batch, model, pad=0).to(device)
         # tgt_pad_mask = (batch.tgt_pad_mask).to(device)
 
         optimizer.zero_grad()
-        if src.size(0) != max_len:
-            src_mask = model.generate_square_subsequent_mask(src.size(0)).to(device)
-
-        output = model(src, src_mask, src_key_padding_mask=src_pad_mask)
+        output = model(src, mask)
         loss = criterion(output.view(-1, vocab_size), tgt.reshape(-1))
         loss.backward()
         torch.torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
