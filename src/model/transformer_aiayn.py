@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as log_softmax
+import torch.nn.functional as F
 import math
 import copy
 
@@ -29,7 +29,7 @@ class Generator(nn.Module):
 	def forward(self, x):
 		## applies projection from d_model space to vocab space
 		## applies softmax followed by logarithm along vocab direction (to generate probabilities of each word)
-		return log_softmax(self.proj(x), dim=-1)
+		return F.log_softmax(self.proj(x), dim=-1)
 
 
 class Decoder(nn.Module):
@@ -236,7 +236,7 @@ def make_std_mask(batch, model, pad, device=None):
 
     ## subsequent_mask is bool tensor with upper diagonal set to False (shape [1, 9, 9])
     ## tgt_mask is true wherever tgt is not equal to pad
-    tgt_mask = tgt_mask & subsequent_mask(tgt.size(-1)).type_as(tgt_mask.data)
+    tgt_mask = (tgt_mask & subsequent_mask(tgt.size(-1)).type_as(tgt_mask.data)).to(device)
     # & takes intersection of two sets, final shape is [30, 9, 9]
     return tgt_mask
 
@@ -294,6 +294,12 @@ class NoamOpt:
                     (self.model_size ** (-0.5)
                      * min(step ** (-0.5), step * self.warmup ** (-1.5)))
 
+	def get_last_lr(self):
+		# this is silly. but it's simply a function to work with training in
+		# our pipeline, get_last_lr is a function that should output the last_lr
+		# of the scheduler.
+		return [self.rate()]
+
 
 class LabelSmoothing(nn.Module):
 	# "Implement label smoothing."
@@ -317,4 +323,4 @@ class LabelSmoothing(nn.Module):
 			true_dist.index_fill_(0, mask.squeeze(), 0.0)
 		self.true_dist = true_dist
 
-		return self.criterion(x, true_dist.clone().detach())
+		return self.criterion(x, true_dist.clone().detach())  # / 100  # TODO JR : ppl is too large if we leave this as is. Need the /100... why is that the case?

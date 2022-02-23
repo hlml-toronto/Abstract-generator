@@ -4,16 +4,18 @@ import torch
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from src.data.dataloader_class import CustomBatch
 
 
-def gen_some_text(model, tokenizer, device, max_len_context,
+def gen_some_text(model, tokenizer, device, max_len_context, make_std_mask,
                   text_prompt='The dog ran across the',
                   tokens_to_gen=10,
                   vis=False,
                   decode_style='greedy',
                   decode_seed=0,
                   decode_beta=1.0,
-                  decode_sample_topp_threshold=0.70):
+                  decode_sample_topp_threshold=0.70,
+                  dim=0):
     """
     dummy_token: if text_prompt is < max_len_context tokens, need to add dummy tokens and mask them
     1) tokenize the text prompt. TODO [jeremy]: I don't think this is true anymore.
@@ -30,37 +32,37 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         """
         tokenized_text_ints = torch.tensor(
             tokenizer(text)['input_ids'][:-1], dtype=torch.long)
+        if dim == 1:
+            tokenized_text_ints = torch.transpose(tokenized_text_ints, 0, 1)
         return tokenized_text_ints
 
-    def process_prompt(dummy_token=0):
+    def process_prompt(text_string, dummy_token=0):
         # Two cases:
         # - if less than max_len_context (context length), need to add dummy tokens
         # - if longer than max_len_context (context length), truncate to max_len_context
-        tokenized_text = tokenize_some_text(text=text_prompt)
+        tokenized_text = tokenize_some_text(text=text_string)
         nn = tokenized_text.shape[0]
 
         if nn > max_len_context:  # take last max_len_context elements
             input_slice = tokenized_text[nn - max_len_context:]
-            src_mask = model.generate_square_subsequent_mask(
-                max_len_context).to(device)
         else:
             input_slice = tokenized_text[0:nn]
-            src_mask = model.generate_square_subsequent_mask(nn).to(device)
 
-        src = torch.zeros((min(nn, max_len_context), 1),
-                          dtype=torch.long).to(device)
-        src[0:nn, 0] = input_slice
-
-        return src, src_mask
+        # not really a batch, single example.
+        pad = tokenizer.get_vocab()["<pad>"]
+        data = [input_slice]
+        single_batch = CustomBatch(data, dim, pad, input_slice.size()[0])
+        src_mask = make_std_mask(single_batch, model, pad, device)
+        return single_batch, src_mask
 
     def decode(model_out, style='greedy'):
         """
         Sampling notes:
         - working in log space to improve numeric stability
         - use "Gumbel-max trick"
-          - https://stats.stackexchange.com/questions/64081/how-do-i-sample-from-a-discrete-categorical-distribution-in-log-space
-          - https://en.wikipedia.org/wiki/Categorical_distribution#Sampling_via_the_Gumbel_distribution
-        TODO - verify that this trick works the same as the classic way, for stability we need to compare with high noise (low beta) -- how to make the random samples identical?
+          - https: // stats.stackexchange.com/questions/64081/how-do-i-sample-from-a-discrete-categorical-distribution-in-log-space
+          - https: // en.wikipedia.org/wiki/Categorical_distribution  # Sampling_via_the_Gumbel_distribution
+        TODO - verify that this trick works the same as the classic way, for stability we need to compare with high noise(low beta) - - how to make the random samples identical?
         """
         assert style in ['greedy', 'sample_full', 'sample_topp']
         if style == 'greedy':
@@ -122,19 +124,24 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         return guessed_int
 
     # 1) tokenize the text prompt and prepare associated src_mask for model.forward()
-    # src should be in form ntokens x nbatches
-    src, src_mask = process_prompt(tokenizer.get_vocab()["<pad>"])
-    nn = src_mask.shape[0]
-    src.reshape((nn, 1))
+    # src should be in form ntokens x nbatches for hf transformer
 
     # 2)
     model.eval()
     for idx in range(tokens_to_gen):
-        running_context_string = ' '.join(
-            [tokenizer.decode(src[k]) for k in range(src.shape[0])])
-        # print(running_context_string)
+        batch, src_mask = process_prompt(total_text_string,
+                                         tokenizer.get_vocab()["<pad>"])
+        # running_context_string = ' '.join([tokenizer.decode(src[k])
+        #                                    for k in range(src.shape[0])])
+        running_context_string = total_text_string
+
         # TESTING DIFFERENT src_mask (all zero)
         use_diff_mask = False
+
+        if dim == 0:
+            nn = batch.src.size()[0]
+        else:
+            nn = batch.src.size()[1]
         if use_diff_mask:
             print('Warning: testing maskless generation')
             # A:
@@ -149,7 +156,9 @@ def gen_some_text(model, tokenizer, device, max_len_context,
             src_mask.to(device)
 
         # TODO : add src_key_padding_mask to the forward call
-        out = model.forward(src, src_mask)
+        out = model.forward((batch.src).to(device), src_mask)
+        if dim == 1:
+            out = torch.transpose(out, 0, 1)
         # print(out.shape)
         if vis:
             next_word_weights = out[nn - 1, 0].detach().numpy()
@@ -176,8 +185,9 @@ def gen_some_text(model, tokenizer, device, max_len_context,
             top_word_probs = next_word_probs[top_word_indices]
             x = list(range(kk))
             plt.title('next_word_probs: iteration %d' % idx)
-            plt.suptitle(running_context_string
-                         + ' ???', fontsize=8, wrap=True)
+            plt.suptitle(running_context_string + ' ???',
+                         fontsize=8,
+                         wrap=True)
             plt.xticks(x, [tokenizer.decode(k)
                        for k in top_word_indices[0:kk]], rotation=60)
             plt.plot(x, top_word_probs[0:kk])
@@ -192,7 +202,7 @@ def gen_some_text(model, tokenizer, device, max_len_context,
         total_text_string += ' %s' % next_guess_string
 
         # print(total_text_string)
-
+        """
         # update src and src mask for next pass of model.forward()
         if nn < max_len_context:
             # extend and shift the running window of input data
@@ -208,17 +218,19 @@ def gen_some_text(model, tokenizer, device, max_len_context,
             src_orig = src.clone()
             src[0:max_len_context - 1, 0] = src_orig[1:, 0]
             src[-1, 0] = next_guess_int
-
+        """
     return total_text_string
 
 
 def gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt,
+                          make_std_mask,
                           decode_style,
                           max_len_context,
                           decode_seed=0,
                           decode_beta=1.0):
     generated_text = gen_some_text(generator_model, tokenizer, device,
                                    max_len_context,
+                                   make_std_mask,
                                    text_prompt=text_prompt,
                                    tokens_to_gen=25,
                                    decode_style=decode_style,
@@ -229,6 +241,7 @@ def gen_some_text_wrapper(generator_model, tokenizer, device, text_prompt,
 
 
 def decode_during_training(generator_model, tokenizer, device, epoch,
+                           make_std_mask,
                            nongreedy_style,
                            max_len_context,
                            text_prompt='The dog ran',
@@ -239,14 +252,18 @@ def decode_during_training(generator_model, tokenizer, device, epoch,
 
     print('Generated text at epoch %d: %s ...' % (epoch, text_prompt))
     # First get greedy decoding
-    greedy_text = gen_some_text_wrapper(
-        generator_model, tokenizer, device, text_prompt, 'greedy', max_len_context)
+    greedy_text = gen_some_text_wrapper(generator_model, tokenizer, device,
+                                        text_prompt,
+                                        make_std_mask,
+                                        'greedy',
+                                        max_len_context)
     print("Greedy decoding:\n\t%s" % (greedy_text))
     # Now get several sampler decodings
     for idx in range(len(decode_seeds)):
         generated_text = gen_some_text_wrapper(generator_model, tokenizer,
                                                device,
                                                text_prompt,
+                                               make_std_mask,
                                                nongreedy_style,
                                                max_len_context,
                                                decode_seed=decode_seeds[idx],

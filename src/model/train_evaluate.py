@@ -27,7 +27,7 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
         optimizer.zero_grad()
         if src.size(0) != BPTT:
             src_mask = model.generate_square_subsequent_mask(src.size(0)).to(device)
-        output = model(src, src_mask)
+        output = model.forward(src, src_mask)
         loss = criterion(output.view(-1, ntokens), tgt)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
@@ -89,8 +89,8 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
         mask = make_std_mask(batch, model, pad=0, device=device)
 
         optimizer.zero_grad()
-        output = model(src, mask)
-        loss = criterion(output.view(-1, vocab_size), tgt.reshape(-1))
+        output = model.forward(src, mask)
+        loss = criterion(output.view(-1, vocab_size), tgt.reshape(-1))  # What is the appropriate criterion for aiayn? I think SimpleLossCompute
         loss.backward()
         torch.torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
@@ -107,6 +107,7 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
                                                       scheduler.get_last_lr()[0],
                                                       elapsed * 1000 / log_interval,
                                                       cur_loss, math.exp(cur_loss)))
+
             total_loss = 0
             start_time = time.time()
     return loss_per_batch
@@ -121,7 +122,7 @@ def evaluate(eval_model, data_source, device, ntokens, criterion):
             src, tgt = get_batch(data_source, i)
             if src.size(0) != BPTT:
                 src_mask = eval_model.generate_square_subsequent_mask(src.size(0)).to(device)
-            output = eval_model(src, src_mask)
+            output = eval_model.forward(src, src_mask)
             output_flat = output.view(-1, ntokens)
             total_loss += len(src) * criterion(output_flat, tgt).item()
     return total_loss / (len(data_source) - 1)
