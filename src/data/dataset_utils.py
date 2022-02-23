@@ -16,6 +16,7 @@ from tokenizers.trainers import BpeTrainer, UnigramTrainer, WordPieceTrainer, Wo
 
 from src.settings import VALID_TOKENIZATIONS
 
+
 def arxiv_oai2(file_path,
                max_retries=100,
                search_set='physics:astro-ph',
@@ -65,12 +66,12 @@ def arxiv_oai2(file_path,
         keys = ['title', 'creator', 'subject', 'description', 'date', 'type', 'identifier', 'language']
 
     records = search.ListRecords(
-                **{'metadataPrefix': metadata_style,
-                'from': start_date,
-                'until': end_date,
-                'ignore_deleted':True,
-                'set': search_set
-                })
+                                 **{'metadataPrefix': metadata_style,
+                                    'from': start_date,
+                                    'until': end_date,
+                                    'ignore_deleted': True,
+                                    'set': search_set
+                                    })
 
     counter = 0
     record_list = []
@@ -94,6 +95,7 @@ def arxiv_oai2(file_path,
         dict_writer.writerows(record_list)
 
     return file_path
+
 
 def arxiv_api(file_path, max_results=11, search_query='all:electron'):
 

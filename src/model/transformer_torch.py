@@ -1,7 +1,6 @@
 import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as F  # unused?
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
@@ -185,9 +184,19 @@ def load_model(model_path, device, as_pickle=True, vocab=None):
     return model
 
 
-def make_std_mask(batch, model, pad=0):
+def make_std_mask(batch, model, pad=0, device='cpu'):
+    """ Passes subsequent mask and source padding mask
+
+    input
+        batch : batch of the data. Used to get the padding mask and src.size
+        model : model used. Should be the Hugging Face model.
+        pad : not used here, but an argument for AIAYN. Might need to change
+                this function.
+    return
+        src_mask : the subsequent mask for the src.
+        src_pad_mask : a mask of the padding in the src.
+    """
     src_pad_mask = batch.src_pad_mask
     src = batch.src
-    if src.size(0) != max_len:
-        src_mask = model.generate_square_subsequent_mask(src.size(0))
-    return [src_mask, src_pad_mask]
+    src_mask = model.generate_square_subsequent_mask(src.size(0))
+    return [src_mask.to(device), src_pad_mask.to(device)]

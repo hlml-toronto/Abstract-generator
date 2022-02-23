@@ -6,8 +6,8 @@ import time
 import numpy as np
 import torch
 
-from src.model._OLD_model_utils import get_batch  # TODO remove need for this import in train()
-from src.settings import BPTT
+# from src.model._OLD_model_utils import get_batch  # TODO remove need for this import in train()
+# from src.settings import BPTT
 
 
 def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, epoch):
@@ -58,7 +58,7 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
     return loss_per_batch
 
 
-def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer, scheduler, criterion, max_len=None):
+def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer, scheduler, criterion, make_std_mask, max_len=None):
     """
     Training loop that takes batches from dataloader and pushes them to device to train.
     Will check if they're the same size of max_len: if shorter, will reduce to the longest length in the batch.
@@ -77,8 +77,6 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
     model.train()  # set to: evaluation mode
     total_loss = 0.
     start_time = time.time()
-    if max_len is not None:
-        src_mask = model.generate_square_subsequent_mask(max_len).to(device)
 
     batch_indices = np.arange(0, len(dataloader))
     loss_per_batch = 0.0 * batch_indices  # record the training loss for each batch
@@ -88,8 +86,7 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
         src = (batch.src).to(device)
         tgt = (batch.tgt).to(device)
 
-        mask = make_std_mask(batch, model, pad=0).to(device)
-        # tgt_pad_mask = (batch.tgt_pad_mask).to(device)
+        mask = make_std_mask(batch, model, pad=0, device=device)
 
         optimizer.zero_grad()
         output = model(src, mask)
@@ -130,7 +127,7 @@ def evaluate(eval_model, data_source, device, ntokens, criterion):
     return total_loss / (len(data_source) - 1)
 
 
-def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterion, max_len):
+def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterion, max_len, make_std_mask):
     """
     Takes a trained model, puts it in evaluation mode to see how well it
     performs on another set of data.
@@ -146,15 +143,12 @@ def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterio
     eval_model.eval()  # set to: evaluation mode
     total_loss = 0.
     total_len = 0.
-    src_mask = eval_model.generate_square_subsequent_mask(max_len).to(device)
     with torch.no_grad():
         for batch in dataloader:
             src = (batch.src).to(device)  # dim(src) = sentence_len x nbr_samples
             tgt = (batch.tgt).to(device)
-            src_pad_mask = (batch.src_pad_mask).to(device)
-            if src.size(0) != max_len:
-                src_mask = eval_model.generate_square_subsequent_mask(src.size(0)).to(device)
-            output = eval_model(src, src_mask, src_key_padding_mask=src_pad_mask)
+            mask = make_std_mask(batch, eval_model, pad=0, device=device)
+            output = eval_model(src, mask)
             output_flat = output.view(-1, vocab_size)
             total_loss += src.size(0) * criterion(output_flat, tgt.reshape(-1)).item()
             total_len += src.size(0)
