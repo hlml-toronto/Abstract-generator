@@ -58,7 +58,7 @@ def train(model, device, train_data, ntokens, optimizer, scheduler, criterion, e
     return loss_per_batch
 
 
-def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer, scheduler, criterion, make_std_mask, max_len=None):
+def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer, scheduler, criterion, make_std_mask, pad, max_len=None):
     """
     Training loop that takes batches from dataloader and pushes them to device to train.
     Will check if they're the same size of max_len: if shorter, will reduce to the longest length in the batch.
@@ -71,6 +71,7 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
         criterion               :
         device (str)            : gpu or cpu
         max_len (int)           : maximum sentence length if not None
+        pad (int)               : padding token
     Output
         None
     """
@@ -86,16 +87,17 @@ def train_version_jeremy(model, dataloader, device, vocab_size, epoch, optimizer
         src = (batch.src).to(device)
         tgt = (batch.tgt).to(device)
 
-        mask = make_std_mask(batch, model, pad=0, device=device)
+        mask = make_std_mask(batch, model, pad=pad, device=device)
 
         optimizer.zero_grad()
         output = model.forward(src, mask)
-        loss = criterion(output.view(-1, vocab_size), tgt.reshape(-1))  # What is the appropriate criterion for aiayn? I think SimpleLossCompute
+        batch_ntokens = (tgt != pad).data.sum()
+        loss = criterion(output.view(-1, vocab_size), tgt.reshape(-1)) / batch_ntokens # What is the appropriate criterion for aiayn? I think SimpleLossCompute
         loss.backward()
         torch.torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
 
-        loss_per_batch[i] = loss  # TODO check if scaling is correct
+        loss_per_batch[i] = loss # TODO check if scaling is correct
         total_loss += loss.item()
         log_interval = 200
         if i % log_interval == 0 and i > 0:
@@ -128,7 +130,7 @@ def evaluate(eval_model, data_source, device, ntokens, criterion):
     return total_loss / (len(data_source) - 1)
 
 
-def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterion, max_len, make_std_mask):
+def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterion, max_len, make_std_mask, pad):
     """
     Takes a trained model, puts it in evaluation mode to see how well it
     performs on another set of data.
@@ -148,9 +150,10 @@ def evaluate_version_jeremy(eval_model, dataloader, device, vocab_size, criterio
         for batch in dataloader:
             src = (batch.src).to(device)  # dim(src) = sentence_len x nbr_samples
             tgt = (batch.tgt).to(device)
-            mask = make_std_mask(batch, eval_model, pad=0, device=device)
+            mask = make_std_mask(batch, eval_model, pad=pad, device=device)
             output = eval_model(src, mask)
+            batch_ntokens = (tgt != pad).data.sum()
             output_flat = output.view(-1, vocab_size)
-            total_loss += src.size(0) * criterion(output_flat, tgt.reshape(-1)).item()
+            total_loss += src.size(0) * criterion(output_flat, tgt.reshape(-1)).item()/batch_ntokens
             total_len += src.size(0)
     return total_loss / (total_len - 1)  # TODO : why -1 ?
